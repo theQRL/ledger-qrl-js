@@ -15,12 +15,10 @@
 *  limitations under the License.
 ********************************************************************************/
 
-var isNode = (typeof window === 'undefined');
-
 var ledger = module.exports;
 
-if (isNode) ledger.comm_node = require('./ledger-comm-node');
-else ledger.comm_u2f = require('./ledger-comm-u2f');
+ledger.comm_node = require('./ledger-comm-node');
+ledger.comm_u2f = require('./ledger-comm-u2f');
 ledger.qrl = require('./ledger-qrl');
 
 module.exports = ledger;

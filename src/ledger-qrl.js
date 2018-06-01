@@ -27,7 +27,7 @@ var LedgerQrl = function (comm) {
 };
 
 LedgerQrl.prototype.get_version = function () {
-    var buffer = "8000";
+    var buffer = "770000000000";
     return this.comm.exchange(buffer.toString('hex'), [0x9000]).then(
         function (apduResponse) {
             var result = {};

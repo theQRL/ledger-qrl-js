@@ -18,7 +18,6 @@
 var ledger = module.exports;
 
 ledger.comm_u2f = require('./ledger-comm-u2f');
-ledger.btc = require('./ledger-qrl');
-ledger.eth = require('./ledger-eth');
+ledger.qrl = require('./ledger-qrl');
 
 module.exports = ledger;

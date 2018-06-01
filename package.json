@@ -30,6 +30,8 @@
   },
   "scripts": {
     "test": "node tests/tests-node.js",
+    "browserify-test": "browserify --im --standalone runTests -o tests/tests-browser.js tests/tests-u2f.js",
+    "browserify": "browserify --im --s=ledger -o browser/ledger.js src/index-browserify.js",
     "clean": "rm -f browser/ledger.js browser/ledger.min.js"
   },
   "browser": {
