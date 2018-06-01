@@ -72,83 +72,27 @@ describe('get_version', function () {
     });
 });
 
-describe('get_state', function () {
+describe('test_comm', function () {
     let response;
     // call API
     before(function () {
         return comm.create_async(TIMEOUT, true).then(
             function (comm) {
                 let qrl = new ledger.qrl(comm);
-                return qrl.get_state().then(function (result) {
+                return qrl.test_comm(5).then(function (result) {
                     response = result;
                     console.log(response);
                 })
             });
     });
-
-    it('get_state has property test_mode', function () {
+    it('test_comm receives a response', function () {
         expect(response);
     });
-
-    it('get_state has property test_mode', function () {
-        expect(response).to.have.a.property('mode');
+    it('test_comm has property test_mode', function () {
+        expect(response).to.have.a.property('data');
     });
-    it('get_state has property major', function () {
-        expect(response).to.have.a.property('xmss_index');
-    });
-    // it('get_state has property minor', function () {
-    //     expect(response).to.have.a.property('minor');
-    // });
-    // it('get_state has property patch', function () {
-    //     expect(response).to.have.a.property('patch');
-    // });
-    //
-    // it('device test_mode is enabled', function () {
-    //     expect(response.test_mode).to.be.true;
-    // });
-    // it('app has matching version', function () {
-    //     expect(response.major).to.equal(EXPECTED_MAJOR);
-    //     expect(response.minor).to.equal(EXPECTED_MINOR);
-    //     expect(response.patch).to.equal(EXPECTED_PATCH);
-    // });
-});
-
-describe('keygen', function () {
-    let response;
-    // call API
-    before(function () {
-        this.timeout(TIMEOUT_KEYGEN);
-        return comm.create_async(TIMEOUT_KEYGEN, true).then(
-            function (comm) {
-                let qrl = new ledger.qrl(comm);
-                return qrl.keygen().then(function (result) {
-                    response = result;
-                    console.log(response);
-                })
-            });
-    });
-
-    it('keygen returns a response', function () {
-        expect(response);
+    it('test_comm has property test_mode', function () {
+        expect(response.data).to.eql(Buffer.from([1, 2, 3, 4, 5]));
     });
 });
 
-describe('publickey', function () {
-    let response;
-    // call API
-    before(function () {
-        this.timeout(TIMEOUT_KEYGEN);
-        return comm.create_async(TIMEOUT_KEYGEN, true).then(
-            function (comm) {
-                let qrl = new ledger.qrl(comm);
-                return qrl.publickey().then(function (result) {
-                    response = result;
-                    console.log(response);
-                })
-            });
-    });
-
-    it('publickey returns a response', function () {
-        expect(response);
-    });
-});
