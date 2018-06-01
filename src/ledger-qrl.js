@@ -27,7 +27,7 @@ var LedgerQrl = function (comm) {
 };
 
 LedgerQrl.prototype.get_version = function () {
-    var buffer = "770000000000";
+    var buffer = "7700000000";
     return this.comm.exchange(buffer.toString('hex'), [0x9000]).then(
         function (apduResponse) {
             var result = {};
@@ -44,7 +44,7 @@ LedgerQrl.prototype.get_version = function () {
 };
 
 LedgerQrl.prototype.get_state = function () {
-    var buffer = "8001";
+    var buffer = "7701000000";
     return this.comm.exchange(buffer.toString('hex'), [0x9000]).then(
         function (apduResponse) {
             var result = {};
@@ -53,10 +53,5 @@ LedgerQrl.prototype.get_state = function () {
             return result;
         });
 };
-
-// LedgerQrl.MAX_SCRIPT_BLOCK = 50;
-// LedgerQrl.DEFAULT_LOCKTIME = 0;
-// LedgerQrl.DEFAULT_SEQUENCE = 0xffffffff;
-// LedgerQrl.SIGHASH_ALL = 1;
 
 module.exports = LedgerQrl;
