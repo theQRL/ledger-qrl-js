@@ -35,43 +35,6 @@ EXPECTED_MAJOR = 0;
 EXPECTED_MINOR = 1;
 EXPECTED_PATCH = 0;
 
-describe('get_version', function () {
-    let response;
-    // call API
-    before(function () {
-        return comm.create_async(TIMEOUT, true).then(
-                function (comm) {
-                    let qrl = new ledger.qrl(comm);
-                    return qrl.get_version().then(function (result) {
-                        response = result;
-                        console.log(response);
-                    });
-                });
-        });
-
-    it('get_version has property test_mode', function () {
-        expect(response).to.have.a.property('test_mode');
-    });
-    it('get_version has property major', function () {
-        expect(response).to.have.a.property('major');
-    });
-    it('get_version has property minor', function () {
-        expect(response).to.have.a.property('minor');
-    });
-    it('get_version has property patch', function () {
-        expect(response).to.have.a.property('patch');
-    });
-
-    it('device test_mode is enabled', function () {
-        expect(response.test_mode).to.be.true;
-    });
-    it('app has matching version', function () {
-        expect(response.major).to.equal(EXPECTED_MAJOR);
-        expect(response.minor).to.equal(EXPECTED_MINOR);
-        expect(response.patch).to.equal(EXPECTED_PATCH);
-    });
-});
-
 describe('get_state', function () {
     let response;
     // call API
@@ -86,50 +49,19 @@ describe('get_state', function () {
             });
     });
 
+    it('return_code is 0x9000', function () {
+        expect(response.return_code).to.equal(0x9000);
+    });
+
     it('get_state has property test_mode', function () {
         expect(response);
     });
 
-    it('get_state has property test_mode', function () {
+    it('has property mode', function () {
         expect(response).to.have.a.property('mode');
     });
-    it('get_state has property major', function () {
+    it('has property xmss_index', function () {
         expect(response).to.have.a.property('xmss_index');
-    });
-    // it('get_state has property minor', function () {
-    //     expect(response).to.have.a.property('minor');
-    // });
-    // it('get_state has property patch', function () {
-    //     expect(response).to.have.a.property('patch');
-    // });
-    //
-    // it('device test_mode is enabled', function () {
-    //     expect(response.test_mode).to.be.true;
-    // });
-    // it('app has matching version', function () {
-    //     expect(response.major).to.equal(EXPECTED_MAJOR);
-    //     expect(response.minor).to.equal(EXPECTED_MINOR);
-    //     expect(response.patch).to.equal(EXPECTED_PATCH);
-    // });
-});
-
-describe('keygen', function () {
-    let response;
-    // call API
-    before(function () {
-        this.timeout(TIMEOUT_KEYGEN);
-        return comm.create_async(TIMEOUT_KEYGEN, true).then(
-            function (comm) {
-                let qrl = new ledger.qrl(comm);
-                return qrl.keygen().then(function (result) {
-                    response = result;
-                    console.log(response);
-                })
-            });
-    });
-
-    it('keygen returns a response', function () {
-        expect(response);
     });
 });
 
@@ -147,8 +79,7 @@ describe('publickey', function () {
                 })
             });
     });
-
-    it('publickey returns a response', function () {
-        expect(response);
+    it('return_code is 0x9000', function () {
+        expect(response.return_code).to.equal(0x9000);
     });
 });

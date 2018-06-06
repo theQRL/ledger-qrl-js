@@ -32,7 +32,7 @@ else {
 TIMEOUT = 1000;
 TIMEOUT_KEYGEN = 15000;
 EXPECTED_MAJOR = 0;
-EXPECTED_MINOR = 1;
+EXPECTED_MINOR = 2;
 EXPECTED_PATCH = 0;
 
 describe('get_version', function () {
@@ -48,21 +48,22 @@ describe('get_version', function () {
                     });
                 });
         });
-
-    it('get_version has property test_mode', function () {
+    it('return_code is 0x9000', function () {
+        expect(response.return_code).to.equal(0x9000);
+    });
+    it('has property test_mode', function () {
         expect(response).to.have.a.property('test_mode');
     });
-    it('get_version has property major', function () {
+    it('has property major', function () {
         expect(response).to.have.a.property('major');
     });
-    it('get_version has property minor', function () {
+    it('has property minor', function () {
         expect(response).to.have.a.property('minor');
     });
-    it('get_version has property patch', function () {
+    it('has property patch', function () {
         expect(response).to.have.a.property('patch');
     });
-
-    it('device test_mode is enabled', function () {
+    it('test_mode is enabled', function () {
         expect(response.test_mode).to.be.true;
     });
     it('app has matching version', function () {
@@ -72,7 +73,7 @@ describe('get_version', function () {
     });
 });
 
-describe('test_comm', function () {
+describe('test_comm(5)', function () {
     let response;
     // call API
     before(function () {
@@ -85,14 +86,17 @@ describe('test_comm', function () {
                 })
             });
     });
-    it('test_comm receives a response', function () {
-        expect(response);
+    it('return_code is 0x9000', function () {
+        expect(response.return_code).to.equal(0x9000);
     });
-    it('test_comm has property test_mode', function () {
-        expect(response).to.have.a.property('data');
+    it('has property test_answer', function () {
+        expect(response).to.have.a.property('test_answer');
     });
-    it('test_comm has property test_mode', function () {
-        expect(response.data).to.eql(Buffer.from([1, 2, 3, 4, 5]));
+    it('has property test_answer', function () {
+        expect(response).to.have.a.property('test_answer');
+    });
+    it('answer is a sequence of size 5', function () {
+        console.log(response);
+        expect(response.test_answer).to.eql(Buffer.from([1, 2, 3, 4, 5]));
     });
 });
-

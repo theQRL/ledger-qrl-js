@@ -28,19 +28,24 @@ var LedgerQrl = function (comm) {
 
 const CLA = 0x77;
 
-const INS_VERSION = 0x00;
-const INS_GETSTATE = 0x01;
-const INS_KEYGEN = 0x02;
-const INS_PUBLIC_KEY = 0x03;
-const INS_SIGN = 0x04;
-const INS_SIGN_NEXT = 0x05;
+const INS_VERSION             = 0x00;
+const INS_GETSTATE            = 0x01;
+const INS_PUBLIC_KEY          = 0x03;
+const INS_SIGN                = 0x04;
+const INS_SIGN_NEXT           = 0x05;
 
 /* These instructions are only enabled in test mode */
-const INS_TEST_WRITE_LEAF = 0x83;
-const INS_TEST_READ_LEAF = 0x84;
-const INS_TEST_DIGEST = 0x85;
-const INS_TEST_SETSTATE = 0x88;
-const INS_TEST_COMM = 0x89;
+const INS_TEST_PK_GEN_1       = 0x80;
+const INS_TEST_PK_GEN_2       = 0x81;
+const INS_TEST_CALC_PK        = 0x82;
+const INS_TEST_WRITE_LEAF     = 0x83;
+const INS_TEST_READ_LEAF      = 0x84;
+const INS_TEST_KEYGEN         = 0x85;
+const INS_TEST_DIGEST         = 0x86;
+const INS_TEST_SETSTATE       = 0x87;
+const INS_TEST_COMM           = 0x88;
+
+const APDU_ERROR_CODE_OK = 0x9000;
 
 function serialize(CLA, INS, p1 = 0, p2 = 0, data = null) {
     var size = 5;
@@ -53,9 +58,16 @@ function serialize(CLA, INS, p1 = 0, p2 = 0, data = null) {
     buffer[1] = INS;
     buffer[2] = p1;
     buffer[3] = p2;
+    buffer[4] = 0;
 
-    if (data != null)
-        data.copy(buffer, 4);
+    if (data != null) {
+        if (buffer.length > 255)
+        {
+            throw new Error('maximum data size = 255');
+        }
+        buffer[4] = buffer.length;
+        data.copy(buffer, 5);
+    }
 
     return buffer;
 }
@@ -67,10 +79,13 @@ LedgerQrl.prototype.get_version = function () {
         function (apduResponse) {
             var result = {};
             apduResponse = Buffer.from(apduResponse, 'hex');
+            let error_code_data = apduResponse.slice(-2);
+
             result["test_mode"] = apduResponse[0] !== 0;
             result["major"] = apduResponse[1];
             result["minor"] = apduResponse[2];
             result["patch"] = apduResponse[3];
+            result["return_code"] = error_code_data[0] * 256 + error_code_data[1];
             return result;
         });
 };
@@ -82,37 +97,26 @@ LedgerQrl.prototype.get_state = function () {
         function (apduResponse) {
             var result = {};
             apduResponse = Buffer.from(apduResponse, 'hex');
+            let error_code_data = apduResponse.slice(-2);
+
             result["mode"] = 0;
             result["xmss_index"] = apduResponse[1] + apduResponse[2] * 256;
-            console.log(apduResponse);
-            return result;
-        });
-};
-
-LedgerQrl.prototype.keygen = function () {
-    var buffer = serialize(CLA, INS_KEYGEN, 0, 0);
-
-    return this.comm.exchange(buffer.toString('hex'), [0x9000]).then(
-        function (apduResponse) {
-            var result = {};
-            apduResponse = Buffer.from(apduResponse, 'hex');
-            result["mode"] = 0;
-            result["xmss_index"] = apduResponse[1] + apduResponse[2] * 256;
-            console.log(apduResponse);
+            result["return_code"] = error_code_data[0] * 256 + error_code_data[1];
             return result;
         });
 };
 
 LedgerQrl.prototype.publickey = function () {
-    var buffer = serialize(CLA, INS_PUBLIC_KEY, 0, 0);
+    var buffer = serialize(CLA, INS_PUBLIC_KEY);
 
     return this.comm.exchange(buffer.toString('hex'), [0x9000]).then(
         function (apduResponse) {
             var result = {};
             apduResponse = Buffer.from(apduResponse, 'hex');
-            result["mode"] = 0;
-            result["xmss_index"] = apduResponse[1] + apduResponse[2] * 256;
-            console.log(apduResponse);
+            let error_code_data = apduResponse.slice(-2);
+
+            result["public_key"] = apduResponse.slice(0, apduResponse.length-2);
+            result["return_code"] = error_code_data[0] * 256 + error_code_data[1];
             return result;
         });
 };
@@ -124,53 +128,41 @@ LedgerQrl.prototype.sign = function () {
         function (apduResponse) {
             var result = {};
             apduResponse = Buffer.from(apduResponse, 'hex');
-            console.log(apduResponse);
+            let error_code_data = apduResponse.slice(-2);
+
+            result["signature_chunk"] = apduResponse.slice(0, apduResponse.length-2);
+            result["return_code"] = error_code_data[0] * 256 + error_code_data[1];
             return result;
         });
 };
 
 LedgerQrl.prototype.signNext = function () {
-    var buffer = serialize(CLA, INS_SIGN_NEXT, 0, 0);
+    var buffer = serialize(CLA, INS_SIGN_NEXT);
 
     return this.comm.exchange(buffer.toString('hex'), [0x9000]).then(
         function (apduResponse) {
             var result = {};
             apduResponse = Buffer.from(apduResponse, 'hex');
-            result["chunk"] = apduResponse;
-            console.log(apduResponse);
+            let error_code_data = apduResponse.slice(-2);
+
+            result["signature_chunk"] = apduResponse.slice(0, apduResponse.length-2);
+            result["return_code"] = error_code_data[0] * 256 + error_code_data[1];
             return result;
         });
 };
 
-/* These instructions are only enabled in test mode */
-// const INS_TEST_WRITE_LEAF = 0x83;
-// const INS_TEST_READ_LEAF = 0x84;
-// const INS_TEST_DIGEST = 0x85;
-// const INS_TEST_SETSTATE = 0x88;
-// const INS_TEST_COMM = 0x89;
-
-LedgerQrl.prototype.digest = function (size) {
-    var buffer = serialize(CLA, INS_TEST_DIGEST, size, 0);
+LedgerQrl.prototype.test_comm = function (count) {
+    let buffer = serialize(CLA, INS_TEST_COMM, count);
 
     return this.comm.exchange(buffer.toString('hex'), [0x9000]).then(
         function (apduResponse) {
             var result = {};
             apduResponse = Buffer.from(apduResponse, 'hex');
-            result["data"] = apduResponse.slice(0, -2);
-            console.log(apduResponse);
-            return result;
-        });
-};
+            let error_code_data = apduResponse.slice(-2);
 
-LedgerQrl.prototype.test_comm = function (size) {
-    var buffer = serialize(CLA, INS_TEST_COMM, size, 0);
+            result["test_answer"] = apduResponse.slice(0, apduResponse.length-2);
+            result["return_code"] = error_code_data[0] * 256 + error_code_data[1];
 
-    return this.comm.exchange(buffer.toString('hex'), [0x9000]).then(
-        function (apduResponse) {
-            var result = {};
-            apduResponse = Buffer.from(apduResponse, 'hex');
-            result["data"] = apduResponse.slice(0, -2);
-            console.log(apduResponse);
             return result;
         });
 };
