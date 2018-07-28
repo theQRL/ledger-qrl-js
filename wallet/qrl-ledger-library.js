@@ -1,4 +1,4 @@
-(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.ledger = f()}})(function(){var define,module,exports;return (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
+(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.QrlLedger = f()}})(function(){var define,module,exports;return (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 'use strict'
 
 exports.byteLength = byteLength
@@ -152,6 +152,8 @@ function fromByteArray (uint8) {
 }
 
 },{}],2:[function(require,module,exports){
+
+},{}],3:[function(require,module,exports){
 (function (global){
 /*!
  * The buffer module from node.js, for the browser.
@@ -1944,7 +1946,7 @@ function isnan (val) {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"base64-js":1,"ieee754":3,"isarray":4}],3:[function(require,module,exports){
+},{"base64-js":1,"ieee754":4,"isarray":5}],4:[function(require,module,exports){
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
   var e, m
   var eLen = (nBytes * 8) - mLen - 1
@@ -2030,14 +2032,14 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128
 }
 
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 var toString = {}.toString;
 
 module.exports = Array.isArray || function (arr) {
   return toString.call(arr) == '[object Array]';
 };
 
-},{}],5:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -2223,7 +2225,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],6:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 (function (process,setImmediate){
 // vim:ts=4:sts=4:sw=4:
 /*!
@@ -4275,7 +4277,7 @@ return Q;
 });
 
 }).call(this,require('_process'),require("timers").setImmediate)
-},{"_process":5,"timers":7}],7:[function(require,module,exports){
+},{"_process":6,"timers":8}],8:[function(require,module,exports){
 (function (setImmediate,clearImmediate){
 var nextTick = require('process/browser.js').nextTick;
 var apply = Function.prototype.apply;
@@ -4354,7 +4356,7 @@ exports.clearImmediate = typeof clearImmediate === "function" ? clearImmediate :
   delete immediateIds[id];
 };
 }).call(this,require("timers").setImmediate,require("timers").clearImmediate)
-},{"process/browser.js":5,"timers":7}],8:[function(require,module,exports){
+},{"process/browser.js":6,"timers":8}],9:[function(require,module,exports){
 //Copyright 2014-2015 Google Inc. All rights reserved.
 
 //Use of this source code is governed by a BSD-style
@@ -5116,7 +5118,7 @@ u2f.getApiVersion = function(callback, opt_timeoutSeconds) {
   });
 };
 
-},{}],9:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 /********************************************************************************
 *   Ledger Node JS API
 *   (c) 2016-2017 Ledger
@@ -5136,12 +5138,361 @@ u2f.getApiVersion = function(callback, opt_timeoutSeconds) {
 
 var ledger = module.exports;
 
+ledger.comm_node = require('./ledger-comm-node');
 ledger.comm_u2f = require('./ledger-comm-u2f');
 ledger.qrl = require('./ledger-qrl');
 
 module.exports = ledger;
 
-},{"./ledger-comm-u2f":10,"./ledger-qrl":11}],10:[function(require,module,exports){
+},{"./ledger-comm-node":11,"./ledger-comm-u2f":12,"./ledger-qrl":13}],11:[function(require,module,exports){
+(function (Buffer){
+/********************************************************************************
+*   Ledger Node JS API
+*   (c) 2016-2017 Ledger
+*
+*  Licensed under the Apache License, Version 2.0 (the "License");
+*  you may not use this file except in compliance with the License.
+*  You may obtain a copy of the License at
+*
+*      http://www.apache.org/licenses/LICENSE-2.0
+*
+*  Unless required by applicable law or agreed to in writing, software
+*  distributed under the License is distributed on an "AS IS" BASIS,
+*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+*  See the License for the specific language governing permissions and
+*  limitations under the License.
+********************************************************************************/
+
+var HID = require('node-hid');
+var Q = require('q');
+
+var LedgerNode = function(device, ledgerTransport, timeout, debug) {
+	if (typeof timeout == "undefined") {
+		timeout = 0;
+	}
+	this.device = device;
+	this.ledgerTransport = ledgerTransport;
+	this.timeout = timeout;
+	this.exchangeStack = [];
+	this.debug = debug;
+}
+
+LedgerNode.list_async = function() {
+	var devices = HID.devices();
+	var deviceList = [];
+	for (var i in devices) {
+		if (((devices[i].vendorId == 0x2581) && (devices[i].productId == 0x3b7c)) ||
+		     (devices[i].vendorId == 0x2c97)) {
+			deviceList.push(devices[i].path);
+		}
+	}
+	return Q.fcall(function() {
+		return deviceList;
+	});
+}
+
+LedgerNode.prototype.exchange = function(apduHex, statusList) {
+
+	var ledgerWrap = function(channel, command, packetSize) {
+		var sequenceIdx = 0;
+		var offset = 0;
+
+		var tmp = Buffer.alloc(7);
+		tmp.writeUInt16BE(channel, 0);
+		tmp[2] = 0x05; // TAG_APDU
+		tmp.writeUInt16BE(sequenceIdx, 3);
+		sequenceIdx++;
+		tmp.writeUInt16BE(command.length, 5);
+		var blockSize = (command.length > packetSize - 7 ? packetSize - 7 : command.length);
+		var result = Buffer.concat([tmp, command.slice(offset, offset + blockSize)], blockSize + 7);
+		offset += blockSize;
+		while (offset != command.length) {
+			tmp = Buffer.alloc(5);
+			tmp.writeUInt16BE(channel, 0);
+			tmp[2] = 0x05; // TAG_APDU
+			tmp.writeUInt16BE(sequenceIdx, 3);
+			sequenceIdx++;
+			blockSize = (command.length - offset > packetSize - 5 ? packetSize - 5 : command.length - offset);
+			result = Buffer.concat([result, tmp, command.slice(offset, offset + blockSize)], result.length + blockSize + 5);
+			offset += blockSize;
+		}
+		return result;
+	}
+
+	var ledgerUnwrap = function(channel, data, packetSize) {
+		var offset = 0;
+		var responseLength;
+		var sequenceIdx = 0;
+		var response;
+		if ((typeof data == "undefined") || (data.length < 7 + 5)) {
+			return;
+		}
+		if (data[offset++] != (channel >> 8)) {
+			throw "Invalid channel;"
+		}
+		if (data[offset++] != (channel & 0xff)) {
+			throw "Invalid channel";
+		}
+		if (data[offset++] != 0x05) {
+			throw "Invalid tag";
+		}
+		if (data[offset++] != 0x00) {
+			throw "Invalid sequence";
+		}
+		if (data[offset++] != 0x00) {
+			throw "Invalid sequence";
+		}
+		responseLength = ((data[offset++] & 0xff) << 8);
+		responseLength |= (data[offset++] & 0xff);
+		if (data.length < 7 + responseLength) {
+			return;
+		}
+		var blockSize = (responseLength > packetSize - 7 ? packetSize - 7 : responseLength);
+		response = data.slice(offset, offset + blockSize);
+		offset += blockSize;
+		while (response.length != responseLength) {
+			sequenceIdx++;
+			if (offset == data.length) {
+				return;
+			}
+			if (data[offset++] != (channel >> 8)) {
+				throw "Invalid channel;"
+			}
+			if (data[offset++] != (channel & 0xff)) {
+				throw "Invalid channel";
+			}
+			if (data[offset++] != 0x05) {
+				throw "Invalid tag";
+			}
+			if (data[offset++] != (sequenceIdx >> 8)) {
+				throw "Invalid sequence";
+			}
+			if (data[offset++] != (sequenceIdx & 0xff)) {
+				throw "Invalid sequence";
+			}
+			blockSize = (responseLength - response.length > packetSize - 5 ? packetSize - 5 : responseLength - response.length);
+			if (blockSize > data.length - offset) {
+				return;
+			}
+			response = Buffer.concat([response, data.slice(offset, offset + blockSize)], response.length + blockSize);
+			offset += blockSize;
+		}
+		return response;
+	}
+
+	var currentObject = this;
+	var apdu = Buffer.from(apduHex, 'hex');
+
+	var deferred = Q.defer();
+	var exchangeTimeout;
+	deferred.promise.apdu = apdu;
+	if (!this.ledgerTransport) {
+		deferred.promise.transport = apdu;
+	}
+	else {
+		deferred.promise.transport = ledgerWrap(0x0101, apdu, 64);
+	}
+
+	if (this.timeout != 0) {
+		exchangeTimeout = setTimeout(function() { // Node.js supports timeouts
+			deferred.reject("timeout");
+		}, this.timeout);
+	}
+                
+	// enter the exchange wait list
+	currentObject.exchangeStack.push(deferred);
+                
+	if (currentObject.exchangeStack.length == 1) {
+		var processNextExchange = function() {
+                    
+			// don't pop it now, to avoid multiple at once
+			var deferred = currentObject.exchangeStack[0];
+                    
+			var send_async = function(cardObject, content) {
+				if (cardObject.debug) {
+					console.log('=>' + content.toString('hex'));
+				}
+				var data = [ 0x00 ];
+				for (var i=0; i<content.length; i++) {
+					data.push(content[i]);
+				}
+				cardObject.device.write(data);
+        			return Q.fcall(function() {
+             				return content.length;
+        			});
+			}
+
+			var recv_async = function(cardObject, size) {
+				return Q.ninvoke(cardObject.device, "read").then(function(res) {
+					var buffer = Buffer.from(res);
+					if (cardObject.debug) {
+						console.log('<=' + buffer.toString('hex'));
+					}
+					return buffer;
+				});	
+			}
+                
+			var performExchange = function() {
+
+					var deferredHidSend = Q.defer();
+					var offsetSent = 0;
+					var firstReceived = true;
+					var toReceive = 0;
+
+					var received = Buffer.alloc(0);
+					var sendPart = function() {
+						if (offsetSent == deferred.promise.transport.length) {
+							return receivePart();
+						}
+						var blockSize = (deferred.promise.transport.length - offsetSent > 64 ? 64 : deferred.promise.transport.length - offsetSent);
+						var block = deferred.promise.transport.slice(offsetSent, offsetSent + blockSize);
+						var paddingSize = 64 - block.length;
+						if (paddingSize != 0) {
+							var padding = Buffer.alloc(paddingSize).fill(0);
+							block = Buffer.concat([block, padding], block.length + paddingSize);
+						}
+						return send_async(currentObject, block).then(
+							function(result) {
+								offsetSent += blockSize;
+								return sendPart();
+							}
+						).fail(function(error) {
+							deferredHidSend.reject(error);
+						});
+					}
+					var receivePart = function() {
+						if (!currentObject.ledgerTransport) {
+							return recv_async(currentObject, 64).then(function(result) {
+								received = Buffer.concat([received, result], received.length + result.length);
+								if (firstReceived) {
+									firstReceived = false;
+									if ((received.length == 2) || (received[0] != 0x61)) {
+										deferredHidSend.resolve(received);									
+									}
+									else {									
+										toReceive = received[1];
+										if (toReceive == 0) {
+											toReceive == 256;
+										}
+										toReceive += 2;
+									}								
+								}
+								if (toReceive < 64) {
+									deferredHidSend.resolve(received);									
+								}
+								else {
+									toReceive -= 64;
+									return receivePart();
+								}
+							}).fail(function(error) {
+								deferredHidSend.reject(error);
+							});
+						}
+						else {
+							return recv_async(currentObject, 64).then(function(result) {
+								received = Buffer.concat([received, result], received.length + result.length);
+								var response = ledgerUnwrap(0x0101, received, 64);
+								if (typeof response != "undefined") {
+									deferredHidSend.resolve(response);
+								}
+								else {
+									return receivePart();
+								}
+							}).fail(function(error) {
+								deferredHidSend.reject(error);
+							});
+						}
+					}
+					sendPart();
+					return deferredHidSend.promise;
+			}
+			performExchange().then(function(result) {
+				var resultBin = result; 
+				if (!currentObject.ledgerTransport) {
+					if (resultBin.length == 2 || resultBin[0] != 0x61) {
+						status = (resultBin[0] << 8) | (resultBin[1]);
+						deferred.promise.response = resultBin.toString('hex');
+					}
+					else {
+						var size = resultBin.byteAt(1);
+						// fake T0 
+						if (size == 0) { size = 256; }
+
+						deferred.promise.response = resultBin.toString('hex', 2);
+						status = (resultBin[2 + size] << 8) | (resultBin[2 + size + 1]);
+					}
+				}
+				else {
+					deferred.promise.response = resultBin.toString('hex');
+					status = (resultBin[resultBin.length - 2] << 8) | (resultBin[resultBin.length - 1]);
+				}
+				// Check the status
+				var statusFound = false;
+				for (var index in statusList) {
+					if (statusList[index] == status) {
+						statusFound = true;
+						break;
+					}
+				}
+				if (!statusFound) {
+					deferred.reject("Invalid status " + status.toString(16));
+				}
+				// build the response
+				if (currentObject.timeout != 0) {
+					clearTimeout(exchangeTimeout);
+				}
+				deferred.resolve(deferred.promise.response);
+			})
+			.fail(function(err) { 
+				if (currentObject.timeout != 0) {
+					clearTimeout(exchangeTimeout);
+				}					
+				deferred.reject(err);
+			})
+			.finally(function () { 
+
+				// consume current promise
+				currentObject.exchangeStack.shift();
+                      
+				// schedule next exchange
+				if (currentObject.exchangeStack.length > 0) {
+					processNextExchange();
+				}
+			});                    
+		}; //processNextExchange
+                  
+		// schedule next exchange
+		processNextExchange();
+	}
+                
+	// the exchangeStack will process the promise when possible
+	return deferred.promise;
+}
+
+LedgerNode.prototype.setScrambleKey = function(scrambleKey) {
+}
+
+LedgerNode.prototype.close_async = function() {
+		this.device.close();
+		return Q.fcall(function() {
+		});
+
+}
+
+LedgerNode.create_async = function(timeout, debug) {
+	return LedgerNode.list_async().then(function(result) {
+		if (result.length == 0) {
+			throw "No device found";
+		}
+		return new LedgerNode(new HID.HID(result[0]), true, timeout, debug);
+	});	
+}
+
+
+module.exports = LedgerNode;
+
+}).call(this,require("buffer").Buffer)
+},{"buffer":3,"node-hid":2,"q":7}],12:[function(require,module,exports){
 (function (global,Buffer){
 /********************************************************************************
 *   Ledger Node JS API
@@ -5249,7 +5600,7 @@ Ledger3.create_async = function(timeout) {
 module.exports = Ledger3
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer)
-},{"./chrome-u2f-api":8,"buffer":2,"q":6}],11:[function(require,module,exports){
+},{"./chrome-u2f-api":9,"buffer":3,"q":7}],13:[function(require,module,exports){
 (function (Buffer){
 /********************************************************************************
  *   Ledger Node JS API
@@ -5446,7 +5797,7 @@ LedgerQrl.prototype.test_comm = function (count) {
 module.exports = LedgerQrl;
 
 }).call(this,require("buffer").Buffer)
-},{"./utils":12,"buffer":2,"q":6}],12:[function(require,module,exports){
+},{"./utils":14,"buffer":3,"q":7}],14:[function(require,module,exports){
 /********************************************************************************
 *   Ledger Node JS API
 *   (c) 2016-2017 Ledger
@@ -5540,5 +5891,131 @@ LedgerUtils.asyncWhile = function(condition, callback) {
 module.exports = LedgerUtils;
 
 
-},{"q":6}]},{},[9])(9)
+},{"q":7}],15:[function(require,module,exports){
+/********************************************************************************
+ *   QRL Wallet - Ledger JS Wrapper Library
+ ********************************************************************************/
+
+var Q = require('q')
+
+// Include connection bus
+if (typeof ledger === 'undefined') {
+  ledger = require('../src')
+  comm = ledger.comm_node
+  browser = false
+}
+else {
+  browser = true
+  comm = ledger.comm_u2f
+}
+
+// Constants
+const LIBRARY_VERSION = '0.0.1'
+const TIMEOUT = 1000
+const SHOR_PER_QUANTA = 1000000000
+
+// Create object to store all library functions in
+var QrlLedger = {}
+
+/**
+ * function
+ * version: reports current library version
+ */
+QrlLedger.library_version = async function() {
+  return LIBRARY_VERSION
+}
+
+/**
+ * function
+ * ledger_app_version: reports current version of qrl app on ledger device
+ */
+QrlLedger.app_version = function() {
+  console.log('-- Calling ledger.qrl().get_version() --')
+  return comm.create_async(TIMEOUT, true).then(
+    function (comm) {
+      try {
+        let qrl = new ledger.qrl(comm)
+        return qrl.get_version().then(function (result) {
+          return result
+        })
+      } catch(e) {
+        console.log('---- Caught Error calling ledger.qrl().get_version() ----')
+        console.log(e)
+      }
+    }
+  )
+}
+
+QrlLedger.get_state = function() {
+  console.log('-- Calling ledger.qrl().get_state() --')
+  return comm.create_async(TIMEOUT, true).then(
+    function (comm) {
+      try {
+        let qrl = new ledger.qrl(comm)
+        return qrl.get_state().then(function (result) {
+          return result
+        })
+      } catch(e) {
+        console.log('---- Caught Error calling ledger.qrl().get_state() ----')
+        console.log(e)
+      }
+    }
+  )
+}
+
+QrlLedger.publickey = function() {
+  console.log('-- Calling ledger.qrl().publickey() --')
+  return comm.create_async(TIMEOUT, true).then(
+    function (comm) {
+      try {
+        let qrl = new ledger.qrl(comm)
+        return qrl.publickey().then(function (result) {
+          return result
+        })
+      } catch(e) {
+        console.log('---- Caught Error calling ledger.qrl().publickey() ----')
+        console.log(e)
+      }
+    }
+  )
+}
+
+QrlLedger.sign = function(txn) {
+  console.log('-- Calling ledger.qrl().sign(txn) --')
+  return comm.create_async(TIMEOUT, true).then(
+    function (comm) {
+      try {
+        let qrl = new ledger.qrl(comm)
+        return qrl.sign(txn).then(function (result) {
+          console.log(result)
+          return result
+        })
+      } catch(e) {
+        console.log('---- Caught Error calling ledger.qrl().sign(txn) ----')
+        console.log(e)
+      }
+    }
+  )
+}
+
+QrlLedger.signNext = function() {
+  console.log('-- Calling ledger.qrl().signNext() --')
+  return comm.create_async(TIMEOUT, true).then(
+    function (comm) {
+      try {
+        let qrl = new ledger.qrl(comm)
+        return qrl.signNext().then(function (result) {
+          return result
+        })
+      } catch(e) {
+        console.log('---- Caught Error calling ledger.qrl().signNext() ----')
+        console.log(e)
+      }
+    }
+  )
+}
+
+module.exports = QrlLedger
+
+},{"../src":10,"q":7}]},{},[15])(15)
 });

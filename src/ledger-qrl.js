@@ -47,11 +47,28 @@ const INS_TEST_COMM           = 0x88;
 
 const APDU_ERROR_CODE_OK = 0x9000;
 
+function concatenateTypedArrays (resultConstructor, ...arrays) {
+    let totalLength = 0
+    for (let arr of arrays) {
+        totalLength += arr.length
+    }
+    let result = new resultConstructor(totalLength)
+    let offset = 0
+    for (let arr of arrays) {
+        result.set(arr, offset)
+        offset += arr.length
+    }
+    return result
+}
+
+function bytesToHex (byteArray) {
+    return Array.from(byteArray, function(byte) {
+        return ('00' + (byte & 0xFF).toString(16)).slice(-2)
+    }).join('')
+}
+
 function serialize(CLA, INS, p1 = 0, p2 = 0, data = null) {
     var size = 5;
-
-    if (data != null)
-        size += data.length;
 
     var buffer = Buffer.alloc(size);
     buffer[0] = CLA;
@@ -61,12 +78,17 @@ function serialize(CLA, INS, p1 = 0, p2 = 0, data = null) {
     buffer[4] = 0;
 
     if (data != null) {
-        if (buffer.length > 255)
-        {
+        if (data.length > 255) {
             throw new Error('maximum data size = 255');
         }
-        buffer[4] = buffer.length;
-        data.copy(buffer, 5);
+        buffer[4] = data.length;
+
+        // Add data to end of buffer
+        buffer = concatenateTypedArrays(
+          Uint8Array,
+            buffer,
+            data
+        )
     }
 
     return buffer;
@@ -99,8 +121,8 @@ LedgerQrl.prototype.get_state = function () {
             apduResponse = Buffer.from(apduResponse, 'hex');
             let error_code_data = apduResponse.slice(-2);
 
-            result["mode"] = 0;
-            result["xmss_index"] = apduResponse[1] + apduResponse[2] * 256;
+            result["state"] = apduResponse[0]; // 0 - Not ready, 1 - generating keys, 2 = ready
+            result["xmss_index"] = apduResponse[2] + apduResponse[1] * 256;
             result["return_code"] = error_code_data[0] * 256 + error_code_data[1];
             return result;
         });
@@ -121,10 +143,10 @@ LedgerQrl.prototype.publickey = function () {
         });
 };
 
-LedgerQrl.prototype.sign = function () {
-    var buffer = serialize(CLA, INS_SIGN, 0, 0);
+LedgerQrl.prototype.sign = function (message) {
+    var buffer = serialize(CLA, INS_SIGN, 0, 0, message);
 
-    return this.comm.exchange(buffer.toString('hex'), [0x9000]).then(
+    return this.comm.exchange(bytesToHex(buffer), [0x9000]).then(
         function (apduResponse) {
             var result = {};
             apduResponse = Buffer.from(apduResponse, 'hex');
@@ -132,6 +154,7 @@ LedgerQrl.prototype.sign = function () {
 
             result["signature_chunk"] = apduResponse.slice(0, apduResponse.length-2);
             result["return_code"] = error_code_data[0] * 256 + error_code_data[1];
+
             return result;
         });
 };
