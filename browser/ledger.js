@@ -1,4 +1,4 @@
-(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.ledger = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.ledger = f()}})(function(){var define,module,exports;return (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 'use strict'
 
 exports.byteLength = byteLength
@@ -15,68 +15,102 @@ for (var i = 0, len = code.length; i < len; ++i) {
   revLookup[code.charCodeAt(i)] = i
 }
 
+// Support decoding URL-safe base64 strings, as Node.js does.
+// See: https://en.wikipedia.org/wiki/Base64#URL_applications
 revLookup['-'.charCodeAt(0)] = 62
 revLookup['_'.charCodeAt(0)] = 63
 
-function placeHoldersCount (b64) {
+function getLens (b64) {
   var len = b64.length
+
   if (len % 4 > 0) {
     throw new Error('Invalid string. Length must be a multiple of 4')
   }
 
-  // the number of equal signs (place holders)
-  // if there are two placeholders, than the two characters before it
-  // represent one byte
-  // if there is only one, then the three characters before it represent 2 bytes
-  // this is just a cheap hack to not do indexOf twice
-  return b64[len - 2] === '=' ? 2 : b64[len - 1] === '=' ? 1 : 0
+  // Trim off extra bytes after placeholder bytes are found
+  // See: https://github.com/beatgammit/base64-js/issues/42
+  var validLen = b64.indexOf('=')
+  if (validLen === -1) validLen = len
+
+  var placeHoldersLen = validLen === len
+    ? 0
+    : 4 - (validLen % 4)
+
+  return [validLen, placeHoldersLen]
 }
 
+// base64 is 4/3 + up to two characters of the original data
 function byteLength (b64) {
-  // base64 is 4/3 + up to two characters of the original data
-  return (b64.length * 3 / 4) - placeHoldersCount(b64)
+  var lens = getLens(b64)
+  var validLen = lens[0]
+  var placeHoldersLen = lens[1]
+  return ((validLen + placeHoldersLen) * 3 / 4) - placeHoldersLen
+}
+
+function _byteLength (b64, validLen, placeHoldersLen) {
+  return ((validLen + placeHoldersLen) * 3 / 4) - placeHoldersLen
 }
 
 function toByteArray (b64) {
-  var i, l, tmp, placeHolders, arr
-  var len = b64.length
-  placeHolders = placeHoldersCount(b64)
+  var tmp
+  var lens = getLens(b64)
+  var validLen = lens[0]
+  var placeHoldersLen = lens[1]
 
-  arr = new Arr((len * 3 / 4) - placeHolders)
+  var arr = new Arr(_byteLength(b64, validLen, placeHoldersLen))
+
+  var curByte = 0
 
   // if there are placeholders, only get up to the last complete 4 chars
-  l = placeHolders > 0 ? len - 4 : len
+  var len = placeHoldersLen > 0
+    ? validLen - 4
+    : validLen
 
-  var L = 0
-
-  for (i = 0; i < l; i += 4) {
-    tmp = (revLookup[b64.charCodeAt(i)] << 18) | (revLookup[b64.charCodeAt(i + 1)] << 12) | (revLookup[b64.charCodeAt(i + 2)] << 6) | revLookup[b64.charCodeAt(i + 3)]
-    arr[L++] = (tmp >> 16) & 0xFF
-    arr[L++] = (tmp >> 8) & 0xFF
-    arr[L++] = tmp & 0xFF
+  for (var i = 0; i < len; i += 4) {
+    tmp =
+      (revLookup[b64.charCodeAt(i)] << 18) |
+      (revLookup[b64.charCodeAt(i + 1)] << 12) |
+      (revLookup[b64.charCodeAt(i + 2)] << 6) |
+      revLookup[b64.charCodeAt(i + 3)]
+    arr[curByte++] = (tmp >> 16) & 0xFF
+    arr[curByte++] = (tmp >> 8) & 0xFF
+    arr[curByte++] = tmp & 0xFF
   }
 
-  if (placeHolders === 2) {
-    tmp = (revLookup[b64.charCodeAt(i)] << 2) | (revLookup[b64.charCodeAt(i + 1)] >> 4)
-    arr[L++] = tmp & 0xFF
-  } else if (placeHolders === 1) {
-    tmp = (revLookup[b64.charCodeAt(i)] << 10) | (revLookup[b64.charCodeAt(i + 1)] << 4) | (revLookup[b64.charCodeAt(i + 2)] >> 2)
-    arr[L++] = (tmp >> 8) & 0xFF
-    arr[L++] = tmp & 0xFF
+  if (placeHoldersLen === 2) {
+    tmp =
+      (revLookup[b64.charCodeAt(i)] << 2) |
+      (revLookup[b64.charCodeAt(i + 1)] >> 4)
+    arr[curByte++] = tmp & 0xFF
+  }
+
+  if (placeHoldersLen === 1) {
+    tmp =
+      (revLookup[b64.charCodeAt(i)] << 10) |
+      (revLookup[b64.charCodeAt(i + 1)] << 4) |
+      (revLookup[b64.charCodeAt(i + 2)] >> 2)
+    arr[curByte++] = (tmp >> 8) & 0xFF
+    arr[curByte++] = tmp & 0xFF
   }
 
   return arr
 }
 
 function tripletToBase64 (num) {
-  return lookup[num >> 18 & 0x3F] + lookup[num >> 12 & 0x3F] + lookup[num >> 6 & 0x3F] + lookup[num & 0x3F]
+  return lookup[num >> 18 & 0x3F] +
+    lookup[num >> 12 & 0x3F] +
+    lookup[num >> 6 & 0x3F] +
+    lookup[num & 0x3F]
 }
 
 function encodeChunk (uint8, start, end) {
   var tmp
   var output = []
   for (var i = start; i < end; i += 3) {
-    tmp = (uint8[i] << 16) + (uint8[i + 1] << 8) + (uint8[i + 2])
+    tmp =
+      ((uint8[i] << 16) & 0xFF0000) +
+      ((uint8[i + 1] << 8) & 0xFF00) +
+      (uint8[i + 2] & 0xFF)
     output.push(tripletToBase64(tmp))
   }
   return output.join('')
@@ -86,30 +120,33 @@ function fromByteArray (uint8) {
   var tmp
   var len = uint8.length
   var extraBytes = len % 3 // if we have 1 byte left, pad 2 bytes
-  var output = ''
   var parts = []
   var maxChunkLength = 16383 // must be multiple of 3
 
   // go through the array every three bytes, we'll deal with trailing stuff later
   for (var i = 0, len2 = len - extraBytes; i < len2; i += maxChunkLength) {
-    parts.push(encodeChunk(uint8, i, (i + maxChunkLength) > len2 ? len2 : (i + maxChunkLength)))
+    parts.push(encodeChunk(
+      uint8, i, (i + maxChunkLength) > len2 ? len2 : (i + maxChunkLength)
+    ))
   }
 
   // pad the end with zeros, but make sure to not forget the extra bytes
   if (extraBytes === 1) {
     tmp = uint8[len - 1]
-    output += lookup[tmp >> 2]
-    output += lookup[(tmp << 4) & 0x3F]
-    output += '=='
+    parts.push(
+      lookup[tmp >> 2] +
+      lookup[(tmp << 4) & 0x3F] +
+      '=='
+    )
   } else if (extraBytes === 2) {
-    tmp = (uint8[len - 2] << 8) + (uint8[len - 1])
-    output += lookup[tmp >> 10]
-    output += lookup[(tmp >> 4) & 0x3F]
-    output += lookup[(tmp << 2) & 0x3F]
-    output += '='
+    tmp = (uint8[len - 2] << 8) + uint8[len - 1]
+    parts.push(
+      lookup[tmp >> 10] +
+      lookup[(tmp >> 4) & 0x3F] +
+      lookup[(tmp << 2) & 0x3F] +
+      '='
+    )
   }
-
-  parts.push(output)
 
   return parts.join('')
 }
@@ -1910,7 +1947,7 @@ function isnan (val) {
 },{"base64-js":1,"ieee754":3,"isarray":4}],3:[function(require,module,exports){
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
   var e, m
-  var eLen = nBytes * 8 - mLen - 1
+  var eLen = (nBytes * 8) - mLen - 1
   var eMax = (1 << eLen) - 1
   var eBias = eMax >> 1
   var nBits = -7
@@ -1923,12 +1960,12 @@ exports.read = function (buffer, offset, isLE, mLen, nBytes) {
   e = s & ((1 << (-nBits)) - 1)
   s >>= (-nBits)
   nBits += eLen
-  for (; nBits > 0; e = e * 256 + buffer[offset + i], i += d, nBits -= 8) {}
+  for (; nBits > 0; e = (e * 256) + buffer[offset + i], i += d, nBits -= 8) {}
 
   m = e & ((1 << (-nBits)) - 1)
   e >>= (-nBits)
   nBits += mLen
-  for (; nBits > 0; m = m * 256 + buffer[offset + i], i += d, nBits -= 8) {}
+  for (; nBits > 0; m = (m * 256) + buffer[offset + i], i += d, nBits -= 8) {}
 
   if (e === 0) {
     e = 1 - eBias
@@ -1943,7 +1980,7 @@ exports.read = function (buffer, offset, isLE, mLen, nBytes) {
 
 exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
   var e, m, c
-  var eLen = nBytes * 8 - mLen - 1
+  var eLen = (nBytes * 8) - mLen - 1
   var eMax = (1 << eLen) - 1
   var eBias = eMax >> 1
   var rt = (mLen === 23 ? Math.pow(2, -24) - Math.pow(2, -77) : 0)
@@ -1976,7 +2013,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
       m = 0
       e = eMax
     } else if (e + eBias >= 1) {
-      m = (value * c - 1) * Math.pow(2, mLen)
+      m = ((value * c) - 1) * Math.pow(2, mLen)
       e = e + eBias
     } else {
       m = value * Math.pow(2, eBias - 1) * Math.pow(2, mLen)
@@ -2187,7 +2224,7 @@ process.chdir = function (dir) {
 process.umask = function() { return 0; };
 
 },{}],6:[function(require,module,exports){
-(function (process){
+(function (process,setImmediate){
 // vim:ts=4:sts=4:sw=4:
 /*!
  *
@@ -4237,8 +4274,87 @@ return Q;
 
 });
 
-}).call(this,require('_process'))
-},{"_process":5}],7:[function(require,module,exports){
+}).call(this,require('_process'),require("timers").setImmediate)
+},{"_process":5,"timers":7}],7:[function(require,module,exports){
+(function (setImmediate,clearImmediate){
+var nextTick = require('process/browser.js').nextTick;
+var apply = Function.prototype.apply;
+var slice = Array.prototype.slice;
+var immediateIds = {};
+var nextImmediateId = 0;
+
+// DOM APIs, for completeness
+
+exports.setTimeout = function() {
+  return new Timeout(apply.call(setTimeout, window, arguments), clearTimeout);
+};
+exports.setInterval = function() {
+  return new Timeout(apply.call(setInterval, window, arguments), clearInterval);
+};
+exports.clearTimeout =
+exports.clearInterval = function(timeout) { timeout.close(); };
+
+function Timeout(id, clearFn) {
+  this._id = id;
+  this._clearFn = clearFn;
+}
+Timeout.prototype.unref = Timeout.prototype.ref = function() {};
+Timeout.prototype.close = function() {
+  this._clearFn.call(window, this._id);
+};
+
+// Does not start the time, just sets up the members needed.
+exports.enroll = function(item, msecs) {
+  clearTimeout(item._idleTimeoutId);
+  item._idleTimeout = msecs;
+};
+
+exports.unenroll = function(item) {
+  clearTimeout(item._idleTimeoutId);
+  item._idleTimeout = -1;
+};
+
+exports._unrefActive = exports.active = function(item) {
+  clearTimeout(item._idleTimeoutId);
+
+  var msecs = item._idleTimeout;
+  if (msecs >= 0) {
+    item._idleTimeoutId = setTimeout(function onTimeout() {
+      if (item._onTimeout)
+        item._onTimeout();
+    }, msecs);
+  }
+};
+
+// That's not how node.js implements it but the exposed api is the same.
+exports.setImmediate = typeof setImmediate === "function" ? setImmediate : function(fn) {
+  var id = nextImmediateId++;
+  var args = arguments.length < 2 ? false : slice.call(arguments, 1);
+
+  immediateIds[id] = true;
+
+  nextTick(function onNextTick() {
+    if (immediateIds[id]) {
+      // fn.call() is faster so we optimize for the common use-case
+      // @see http://jsperf.com/call-apply-segu
+      if (args) {
+        fn.apply(null, args);
+      } else {
+        fn.call(null);
+      }
+      // Prevent ids from leaking
+      exports.clearImmediate(id);
+    }
+  });
+
+  return id;
+};
+
+exports.clearImmediate = typeof clearImmediate === "function" ? clearImmediate : function(id) {
+  delete immediateIds[id];
+};
+}).call(this,require("timers").setImmediate,require("timers").clearImmediate)
+},{"process/browser.js":5,"timers":7}],8:[function(require,module,exports){
 //Copyright 2014-2015 Google Inc. All rights reserved.
 
 //Use of this source code is governed by a BSD-style
@@ -5000,7 +5116,7 @@ u2f.getApiVersion = function(callback, opt_timeoutSeconds) {
   });
 };
 
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 /********************************************************************************
 *   Ledger Node JS API
 *   (c) 2016-2017 Ledger
@@ -5021,717 +5137,11 @@ u2f.getApiVersion = function(callback, opt_timeoutSeconds) {
 var ledger = module.exports;
 
 ledger.comm_u2f = require('./ledger-comm-u2f');
-ledger.btc = require('./ledger-btc');
-ledger.eth = require('./ledger-eth');
+ledger.qrl = require('./ledger-qrl');
 
 module.exports = ledger;
 
-},{"./ledger-btc":9,"./ledger-comm-u2f":10,"./ledger-eth":11}],9:[function(require,module,exports){
-(function (Buffer){
-/********************************************************************************
-*   Ledger Node JS API
-*   (c) 2016-2017 Ledger
-*
-*  Licensed under the Apache License, Version 2.0 (the "License");
-*  you may not use this file except in compliance with the License.
-*  You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-*  Unless required by applicable law or agreed to in writing, software
-*  distributed under the License is distributed on an "AS IS" BASIS,
-*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-*  See the License for the specific language governing permissions and
-*  limitations under the License.
-********************************************************************************/
-
-'use strict';
-
-var Q = require('q');
-var utils = require('./utils');
-
-var LedgerBtc = function(comm) {	
-	this.comm = comm;
-	this.comm.setScrambleKey('BTC');
-}
-
-LedgerBtc.prototype.getWalletPublicKey_async = function(path) {
-	var splitPath = utils.splitPath(path);
-	var buffer = Buffer.alloc(5 + 1 + splitPath.length * 4);
-	buffer[0] = 0xe0;
-	buffer[1] = 0x40;
-	buffer[2] = 0x00;
-	buffer[3] = 0x00;
-	buffer[4] = 1 + splitPath.length * 4;
-	buffer[5] = splitPath.length;
-	splitPath.forEach(function (element, index) {
-		buffer.writeUInt32BE(element, 6 + 4 * index);
-	});
-	var self = this;
-	return this.comm.exchange(buffer.toString('hex'), [0x9000]).then(function(response) {
-		var result = {};
-		response = Buffer.from(response, 'hex');
-		var publicKeyLength = response[0];
-		var addressLength = response[1 + publicKeyLength];
-		result['publicKey'] = response.slice(1, 1 + publicKeyLength).toString('hex');
-		result['bitcoinAddress'] = response.slice(1 + publicKeyLength + 1, 1 + publicKeyLength + 1 + addressLength).toString('ascii');
-		result['chainCode'] = response.slice(1 + publicKeyLength + 1 + addressLength, 1 + publicKeyLength + 1 + addressLength + 32).toString('hex');
-		return result;
-
-	});
-}
-
-LedgerBtc.prototype.getTrustedInputRaw_async = function(firstRound, indexLookup, transactionData) {
-	var data;
-	if (firstRound) {
-			var prefix = Buffer.alloc(4);
-			prefix.writeUInt32BE(indexLookup, 0);
-			data = Buffer.concat([prefix, transactionData], transactionData.length + 4);
-		}
-		else {
-			data = transactionData;
-		}
-		var buffer = Buffer.alloc(5);
-		buffer[0] = 0xe0;
-		buffer[1] = 0x42;
-		buffer[2] = (firstRound ? 0x00 : 0x80);
-		buffer[3] = 0x00;
-		buffer[4] = data.length;
-		buffer = Buffer.concat([buffer, data], 5 + data.length);
-		return this.comm.exchange(buffer.toString('hex'), [0x9000]).then(function(trustedInput) {
-			return trustedInput.substring(0, trustedInput.length - 4);
-		});
-}
-
-LedgerBtc.prototype.getTrustedInput_async = function(indexLookup, transaction) {
-	var currentObject = this;
-	var processScriptBlocks = function(script, sequence) {
-		var scriptBlocks = [];
-		var offset = 0;
-		while (offset != script.length) {
-			var blockSize = (script.length - offset > LedgerBtc.MAX_SCRIPT_BLOCK ? 
-				LedgerBtc.MAX_SCRIPT_BLOCK : script.length - offset);
-			if ((offset + blockSize) != script.length) {
-				scriptBlocks.push(script.slice(offset, offset + blockSize));
-			}
-			else {
-				scriptBlocks.push(Buffer.concat([script.slice(offset, offset + blockSize), sequence]));
-			}
-			offset += blockSize;
-		}
-		return utils.eachSeries(
-			scriptBlocks,
-			function(scriptBlock) {
-				return currentObject.getTrustedInputRaw_async(false, undefined, scriptBlock)
-			}
-		);
-	}
-	var processInputs = function() {
-		return utils.eachSeries(
-			transaction['inputs'], 
-			function (input) {
-				data = Buffer.concat([input['prevout'], currentObject.createVarint(input['script'].length)]);   
-				return currentObject.getTrustedInputRaw_async(false, undefined, data).then(function (result) {
-					// iteration (eachSeries) ended
-					// TODO notify progress
-					// deferred.notify("input");
-					return processScriptBlocks(input['script'], input['sequence'])
-				})
-			}).then(function() {
-				data = currentObject.createVarint(transaction['outputs'].length);
-				return currentObject.getTrustedInputRaw_async(false, undefined, data)
-			});
-	}
-	var processOutputs = function() {
-		return utils.eachSeries(
-			transaction['outputs'],
-			function(output) {
-				data = output['amount'];
-				data = Buffer.concat([data, currentObject.createVarint(output['script'].length), output['script']]);
-				return currentObject.getTrustedInputRaw_async(false, undefined, data).then(function(result) {
-					// iteration (eachSeries) ended
-					// TODO notify progress
-					// deferred.notify("output");
-				})
-			}).then(function() {
-            data = transaction['locktime'];
-            return currentObject.getTrustedInputRaw_async(false, undefined, data)
-        })
-	}
-	var data = Buffer.concat([transaction['version'], currentObject.createVarint(transaction['inputs'].length)]);
-	return currentObject.getTrustedInputRaw_async(true, indexLookup, data)
-        .then(processInputs)
-        .then(processOutputs)
-}
-
-LedgerBtc.prototype.getVarint = function(data, offset) {
-	if (data[offset] < 0xfd) {
-		return [ data[offset], 1 ];
-	}
-	if (data[offset] == 0xfd) {
-		return [ ((data[offset + 2] << 8) + data[offset + 1]), 3 ];
-	}
-	if (data[offset] == 0xfe) {
-		return [ ((data[offset + 4] << 24) + (data[offset + 3] << 16) + 
-			(data[offset + 2] << 8) + data[offset + 1]), 5 ];
-	}
-}
-
-LedgerBtc.prototype.startUntrustedHashTransactionInputRaw_async = function (newTransaction, firstRound, transactionData) {
-	var buffer = Buffer.alloc(5);
-		buffer[0] = 0xe0;
-		buffer[1] = 0x44;
-		buffer[2] = (firstRound ? 0x00 : 0x80);
-		buffer[3] = (newTransaction ? 0x00 : 0x80);
-		buffer[4] = transactionData.length;
-		buffer = Buffer.concat([buffer, transactionData], 5 + transactionData.length);
-		return this.comm.exchange(buffer.toString('hex'), [0x9000]);
-}
-
-LedgerBtc.prototype.startUntrustedHashTransactionInput_async = function (newTransaction, transaction, inputs) {
-	var currentObject = this;
-	var data = Buffer.concat([transaction['version'],
-	currentObject.createVarint(transaction['inputs'].length)]);
-	return currentObject.startUntrustedHashTransactionInputRaw_async(newTransaction, true, data).then(function (result) {
-		var i = 0;
-		return utils.eachSeries(
-			transaction['inputs'],
-			function (input) {
-				var inputKey;
-				// TODO : segwit
-				var prefix;
-				if (inputs[i]['trustedInput']) {
-					prefix = Buffer.alloc(2);
-					prefix[0] = 0x01;
-					prefix[1] = inputs[i]['value'].length;		
-				}
-				else {
-					prefix = Buffer.alloc(1);
-					prefix[0] = 0x00;
-				}
-				data = Buffer.concat([prefix, inputs[i]['value'], currentObject.createVarint(input['script'].length)]);
-				return currentObject.startUntrustedHashTransactionInputRaw_async(newTransaction, false, data).then(function (result) {
-
-					var scriptBlocks = [];
-					var offset = 0;
-					if (input['script'].length == 0) {
-						scriptBlocks.push(input['sequence']);
-					}
-					else {
-						while (offset != input['script'].length) {
-							var blockSize = (input['script'].length - offset > LedgerBtc.MAX_SCRIPT_BLOCK ?
-								LedgerBtc.MAX_SCRIPT_BLOCK : input['script'].length - offset);
-							if ((offset + blockSize) != input['script'].length) {
-								scriptBlocks.push(input['script'].slice(offset, offset + blockSize));
-							}
-							else {
-								scriptBlocks.push(Buffer.concat([input['script'].slice(offset, offset + blockSize), input['sequence']]));
-							}
-							offset += blockSize;
-						}
-					}
-					return utils.eachSeries(
-						scriptBlocks,
-						function(scriptBlock) {
-							return currentObject.startUntrustedHashTransactionInputRaw_async(newTransaction, false, scriptBlock)
-                        }).then(function () {
-                            i++;
-                        })
-				})
-			})
-	})
-}
-
-LedgerBtc.prototype.provideOutputFullChangePath_async = function(path) {
-	var splitPath = utils.splitPath(path);
-	var buffer = Buffer.alloc(5 + 1 + splitPath.length * 4);
-	buffer[0] = 0xe0;
-	buffer[1] = 0x4a;
-	buffer[2] = 0xff;
-	buffer[3] = 0x00;
-	buffer[4] = 1 + splitPath.length * 4;
-	buffer[5] = splitPath.length;
-	splitPath.forEach(function (element, index) {
-		buffer.writeUInt32BE(element, 6 + 4 * index);
-	});
-	var self = this;
-	return this.comm.exchange(buffer.toString('hex'), [0x9000]);
-}
-
-LedgerBtc.prototype.hashOutputFull_async = function(outputScript) {
-	var offset = 0;
-	var self = this;
-
-	return utils.asyncWhile(function () {return offset < outputScript.length;}, function () {
-		var blockSize = ((offset + LedgerBtc.MAX_SCRIPT_BLOCK) >= outputScript.length ? outputScript.length - offset : LedgerBtc.MAX_SCRIPT_BLOCK);
-		var p1 = ((offset + blockSize) == outputScript.length ? 0x80 : 0x00);
-		var prefix = Buffer.alloc(5);
-		prefix[0] = 0xe0;
-		prefix[1] = 0x4a;
-		prefix[2] = p1;
-		prefix[3] = 0x00;
-		prefix[4] = blockSize;
-		var data = Buffer.concat([prefix, outputScript.slice(offset, offset + blockSize)]);
-		return self.comm.exchange(data.toString('hex'), [0x9000]).then(function(data) {
-			offset += blockSize;
-		});
-	});
-}
-
-LedgerBtc.prototype.signTransaction_async = function (path, lockTime, sigHashType) {
-	if (typeof lockTime == "undefined") {
-		lockTime = LedgerBtc.DEFAULT_LOCKTIME;
-	}
-	if (typeof sigHashType == "undefined") {
-		sigHashType = LedgerBtc.SIGHASH_ALL;
-	}
-	var splitPath = utils.splitPath(path);
-	var buffer = Buffer.alloc(5 + 1 + splitPath.length * 4 + 1 + 4 + 1);
-	var offset = 0;
-	buffer[offset++] = 0xe0;
-	buffer[offset++] = 0x48;
-	buffer[offset++] = 0x00;
-	buffer[offset++] = 0x00;
-	buffer[offset++] = 1 + splitPath.length * 4 + 1 + 4 + 1;
-	buffer[offset++] = splitPath.length;
-	splitPath.forEach(function (element) {
-		buffer.writeUInt32BE(element, offset);
-		offset += 4;
-	});
-	buffer[offset++] = 0x00; // authorization length
-	buffer.writeUInt32LE(lockTime, offset);
-	offset += 4;
-	buffer[offset++] = sigHashType;
-	var self = this;
-	return self.comm.exchange(buffer.toString('hex'), [0x9000]).then(function(signature) {
-		var result = Buffer.from(signature, 'hex');
-		result[0] = 0x30;
-		return result.slice(0, result.length - 2);
-	})
-}
-
-LedgerBtc.prototype.signMessageNew_async = function(path, messageHex) {
-	var splitPath = utils.splitPath(path);
-	var offset = 0;
-	var message = new Buffer(messageHex, 'hex');
-	var apdus = [];
-	var response = [];
-	var self = this;	
-	while (offset != message.length) {
-		var maxChunkSize = (offset == 0 ? (LedgerBtc.MAX_SCRIPT_BLOCK - 1 - splitPath.length * 4 - 4) : LedgerBtc.MAX_SCRIPT_BLOCK);
-		var chunkSize = (offset + maxChunkSize > message.length ? message.length - offset : maxChunkSize);
-		var buffer = new Buffer(offset == 0 ? 5 + 1 + splitPath.length * 4 + 2 + chunkSize : 5 + chunkSize);
-		buffer[0] = 0xe0;
-		buffer[1] = 0x4e;
-		buffer[2] = 0x00;
-		buffer[3] = (offset == 0 ? 0x01 : 0x80);
-		buffer[4] = (offset == 0 ? 1 + splitPath.length * 4 + 2 + chunkSize : chunkSize);
-		if (offset == 0) {
-			buffer[5] = splitPath.length;
-			splitPath.forEach(function (element, index) {
-				buffer.writeUInt32BE(element, 6 + 4 * index);
-			});
-			buffer.writeUInt16BE(message.length, 6 + 4 * splitPath.length);
-			message.copy(buffer, 6 + 4 * splitPath.length + 2, offset, offset + chunkSize);
-		}
-		else {
-			message.copy(buffer, 5, offset, offset + chunkSize);
-		}
-		apdus.push(buffer.toString('hex'));
-		offset += chunkSize;
-	}
-	return utils.foreach(apdus, function(apdu) {
-		return self.comm.exchange(apdu, [0x9000]).then(function(apduResponse) {
-			response = apduResponse;
-		})
-	}).then(function() {		
-		buffer = Buffer.alloc(6);
-		buffer[0] = 0xe0;
-		buffer[1] = 0x4e;
-		buffer[2] = 0x80;
-		buffer[3] = 0x00;
-		buffer[4] = 0x01;
-		buffer[5] = 0x00;
-		return self.comm.exchange(buffer.toString('hex'), [0x9000]).then(function(apduResponse) {
-				var response = Buffer.from(apduResponse, 'hex');
-				var result = {};
-				result['v'] = response[0] - 0x30;
-				var r = response.slice(4, 4 + response[3]);
-				if (r[0] == 0) {
-					r = r.slice(1);
-				}
-				result['r'] = r.toString('hex');
-				var offset = 4 + response[3] + 2;
-				var s = response.slice(offset, offset + response[offset - 1]);
-				if (s[0] == 0) {
-					s = s.slice(1);
-				}				
-				result['s'] = s.toString('hex');
-				return result;
-		})
-	})		
-}
-
-LedgerBtc.prototype.createPaymentTransactionNew_async = function(inputs, associatedKeysets, changePath, outputScript, lockTime, sigHashType) {
-	// Inputs are provided as arrays of [transaction, output_index, optional redeem script, optional sequence]
-	// associatedKeysets are provided as arrays of [path]	
-	var nullScript = Buffer.alloc(0);
-	var defaultVersion = Buffer.alloc(4);	
-	defaultVersion.writeUInt32LE(1, 0);
-	var trustedInputs = [];
-	var regularOutputs = [];
-	var signatures = [];
-	var publicKeys = [];
-	var firstRun = true;
-	var resuming = false;
-	var self = this;
-	var targetTransaction = {};
-
-	outputScript = Buffer.from(outputScript, 'hex');
-
-	if (typeof lockTime == "undefined") {
-		lockTime = LedgerBtc.DEFAULT_LOCKTIME;
-	}
-	if (typeof sigHashType == "undefined") {
-		sigHashType = LedgerBtc.SIGHASH_ALL;
-	}
-
-	var deferred = Q.defer();
-
-	utils.foreach(inputs, function (input, i) {
-		return utils.doIf(!resuming, function () {
-			return self.getTrustedInput_async(input[1], input[0])
-				.then(function (trustedInput) {
-						var inputItem = {};
-						inputItem['trustedInput'] = true;
-						inputItem['value'] = Buffer.from(trustedInput, 'hex');
-						trustedInputs.push(inputItem);
-				});
-		}).then(function () {
-			regularOutputs.push(input[0].outputs[input[1]]);
-		});
-	}).then(function () {
-		// Pre-build the target transaction
-		targetTransaction['version'] = defaultVersion;
-		targetTransaction['inputs'] = [];
-
-		for (var i = 0; i < inputs.length; i++) {
-			var tmpInput = {};
-			var tmp = Buffer.alloc(4);
-			var sequence;
-			if ((inputs[i].length >= 4) && (typeof inputs[i][3] != "undefined")) {                
-				sequence = inputs[i][3];
-			}
-			else {
-				sequence = LedgerBtc.DEFAULT_SEQUENCE;
-			}
-			tmp.writeUInt32LE(sequence, 0);
-			tmpInput['script'] = nullScript;
-			tmpInput['sequence'] = tmp;
-			targetTransaction['inputs'].push(tmpInput);
-		}
-	}).then(function () {
-		return utils.doIf(!resuming, function () {
-			// Collect public keys
-			return utils.foreach(inputs, function (input, i) {
-				return self.getWalletPublicKey_async(associatedKeysets[i]).then(function (p) {
-					return p;
-				});
-			}).then(function (result) {
-				for (var index = 0; index < result.length; index++) {                        
-					publicKeys.push(self.compressPublicKey(Buffer.from(result[index]['publicKey'], 'hex')));
-				}
-			});
-		})
-	}).then(function () {
-		return utils.foreach(inputs, function (input, i) {
-			var usedScript;
-			if ((inputs[i].length >= 3) && (typeof inputs[i][2] != "undefined")) {
-				usedScript = Buffer.from(inputs[i][2], 'hex');
-			}
-			else {
-				usedScript = regularOutputs[i]['script'];
-			}
-			targetTransaction['inputs'][i]['script'] = usedScript;
-			return self.startUntrustedHashTransactionInput_async(firstRun, targetTransaction, trustedInputs).then(function () {
-				return utils.doIf(!resuming && (typeof changePath != "undefined"), function () {
-					return self.provideOutputFullChangePath_async(changePath);
-				}).then (function () {
-					return self.hashOutputFull_async(outputScript);
-				}).then (function (resultHash) {
-					return self.signTransaction_async(associatedKeysets[i], lockTime, sigHashType).then(function (signature) {
-						signatures.push(signature);
-						targetTransaction['inputs'][i]['script'] = nullScript;
-						if (firstRun) {
-							firstRun = false;
-						}
-					});
-				});
-			});
-		});
-	}).then(function () {
-		// Populate the final input scripts
-		for (var i=0; i < inputs.length; i++) {
-			var signatureSize = Buffer.alloc(1);
-			var keySize = Buffer.alloc(1);
-			signatureSize[0] = signatures[i].length;
-			keySize[0] = publicKeys[i].length;
-			targetTransaction['inputs'][i]['script'] = Buffer.concat([signatureSize, signatures[i], keySize, publicKeys[i]]);
-			targetTransaction['inputs'][i]['prevout'] = trustedInputs[i]['value'].slice(4, 4 + 0x24);
-		}
-
-		var lockTimeBuffer = Buffer.alloc(4);
-		lockTimeBuffer.writeUInt32LE(lockTime, 0);
-
-		var result = Buffer.concat([
-			self.serializeTransaction(targetTransaction),
-			outputScript,
-			lockTimeBuffer]);
-
-		return result.toString('hex');
-	}).fail(function (failure) {
-		throw failure;
-	}).then(function (result) {
-		deferred.resolve(result);
-	}).fail(function (error) {
-		deferred.reject(error);
-	});
-
-	return deferred.promise;
-}
-
-LedgerBtc.prototype.signP2SHTransaction_async = function(inputs, associatedKeysets, outputScript, lockTime, sigHashType) {
-	// Inputs are provided as arrays of [transaction, output_index, redeem script, optional sequence]
-	// associatedKeysets are provided as arrays of [path]	
-	var nullScript = Buffer.alloc(0);
-	var defaultVersion = Buffer.alloc(4);	
-	defaultVersion.writeUInt32LE(1, 0);
-	var trustedInputs = [];
-	var regularOutputs = [];
-	var signatures = [];
-	var publicKeys = [];
-	var firstRun = true;
-	var resuming = false;
-	var self = this;
-	var targetTransaction = {};
-
-	outputScript = Buffer.from(outputScript, 'hex');
-
-	if (typeof lockTime == "undefined") {
-		lockTime = LedgerBtc.DEFAULT_LOCKTIME;
-	}
-	if (typeof sigHashType == "undefined") {
-		sigHashType = LedgerBtc.SIGHASH_ALL;
-	}	
-
-	var deferred = Q.defer();
-
-	utils.foreach(inputs, function (input, i) {
-		return utils.doIf(!resuming, function () {
-			return self.getTrustedInput_async(input[1], input[0])
-				.then(function (trustedInput) {
-						var inputItem = {};
-						inputItem['trustedInput'] = false;
-						inputItem['value'] = Buffer.from(trustedInput, 'hex').slice(4, 4 + 0x24);
-						trustedInputs.push(inputItem);
-				});
-		}).then(function () {
-			regularOutputs.push(input[0].outputs[input[1]]);
-		});
-	}).then(function () {
-		// Pre-build the target transaction
-		targetTransaction['version'] = defaultVersion;
-		targetTransaction['inputs'] = [];
-
-		for (var i = 0; i < inputs.length; i++) {
-			var tmpInput = {};
-			var tmp = Buffer.alloc(4);
-			var sequence;
-			if ((inputs[i].length >= 4) && (typeof inputs[i][3] != "undefined")) {                
-				sequence = inputs[i][3];
-			}
-			else {
-				sequence = LedgerBtc.DEFAULT_SEQUENCE;
-			}
-			tmp.writeUInt32LE(sequence, 0);
-			tmpInput['script'] = nullScript;
-			tmpInput['sequence'] = tmp;
-			targetTransaction['inputs'].push(tmpInput);
-		}
-	}).then(function () {
-		return utils.foreach(inputs, function (input, i) {
-			var usedScript;
-			if ((inputs[i].length >= 3) && (typeof inputs[i][2] != "undefined")) {
-				usedScript = Buffer.from(inputs[i][2], 'hex');
-			}
-			else {
-				usedScript = regularOutputs[i]['script'];
-			}
-			targetTransaction['inputs'][i]['script'] = usedScript;
-			return self.startUntrustedHashTransactionInput_async(firstRun, targetTransaction, trustedInputs).then(function () {
-					return self.hashOutputFull_async(outputScript);
-				}).then (function (resultHash) {
-					return self.signTransaction_async(associatedKeysets[i], lockTime, sigHashType).then(function (signature) {
-						signatures.push(signature.slice(0, signature.length - 1).toString('hex'));
-						targetTransaction['inputs'][i]['script'] = nullScript;
-						if (firstRun) {
-							firstRun = false;
-						}
-					});
-				});
-		});
-	}).then(function () {
-		// Return the signatures
-		return signatures;
-	}).fail(function (failure) {
-		throw failure;
-	}).then(function (result) {
-		deferred.resolve(result);
-	}).fail(function (error) {
-		deferred.reject(error);
-	});
-
-	return deferred.promise;
-}
-
-
-LedgerBtc.prototype.compressPublicKey = function (publicKey) {
-	var prefix = ((publicKey[64] & 1) != 0 ? 0x03 : 0x02);
-	var prefixBuffer = Buffer.alloc(1);
-	prefixBuffer[0] = prefix;
-	return Buffer.concat([prefixBuffer, publicKey.slice(1, 1 + 32)]);
-},
-
-LedgerBtc.prototype.createVarint = function(value) {
-	if (value < 0xfd) {
-		var buffer = Buffer.alloc(1);
-		buffer[0] = value;
-		return buffer;		
-	}
-	if (value <= 0xffff) {
-		var buffer = Buffer.alloc(3);
-		buffer[0] = 0xfd;
-		buffer[1] = (value & 0xff);
-		buffer[2] = ((value >> 8) & 0xff);
-		return buffer;
-	}
-	var buffer = Buffer.alloc(4);
-	buffer[0] = 0xfe;
-	buffer[1] = (value & 0xff);
-	buffer[2] = ((value >> 8) & 0xff);
-	buffer[3] = ((value >> 16) & 0xff);
-	buffer[4] = ((value >> 24) & 0xff);
-	return buffer;
-}
-
-LedgerBtc.prototype.splitTransaction = function(transaction) {
-	var result = {};
-	var inputs = [];
-	var outputs = [];
-	var offset = 0;
-	var transaction = Buffer.from(transaction, 'hex');
-	var version = transaction.slice(offset, offset + 4);
-	offset += 4;
-	var varint = this.getVarint(transaction, offset);
-	var numberInputs = varint[0];
-	offset += varint[1];
-	for (var i=0; i<numberInputs; i++) {
-		var input = {};
-		input['prevout'] = transaction.slice(offset, offset + 36);
-		offset += 36;
-		varint = this.getVarint(transaction, offset);
-		offset += varint[1];
-		input['script'] = transaction.slice(offset, offset + varint[0]);
-		offset += varint[0];
-		input['sequence'] = transaction.slice(offset, offset + 4);
-		offset += 4;
-		inputs.push(input);
-	}		
-	varint = this.getVarint(transaction, offset);
-	var numberOutputs = varint[0];
-	offset += varint[1];
-	for (var i=0; i<numberOutputs; i++) {
-		var output = {};
-		output['amount'] = transaction.slice(offset, offset + 8);
-		offset += 8;
-		varint = this.getVarint(transaction, offset);
-		offset += varint[1];
-		output['script'] = transaction.slice(offset, offset + varint[0]);
-		offset += varint[0];
-		outputs.push(output);
-	}
-	var locktime = transaction.slice(offset, offset + 4);
-	result['version'] = version;
-	result['inputs'] = inputs;
-	result['outputs'] = outputs;
-	result['locktime'] = locktime;
-	return result;
-}
-
-LedgerBtc.prototype.serializeTransactionOutputs = function (transaction) {
-	var self = this;
-	var outputBuffer = Buffer.alloc(0);
-	if (typeof transaction['outputs'] != "undefined") {
-		outputBuffer = Buffer.concat([outputBuffer, self.createVarint(transaction['outputs'].length)]);
-		transaction['outputs'].forEach(function (output) {
-			outputBuffer = Buffer.concat([outputBuffer,
-				output['amount'],
-				self.createVarint(output['script'].length),
-				output['script']]);
-		});
-	}
-	return outputBuffer;
-}
-
-
-LedgerBtc.prototype.serializeTransaction = function (transaction) {
-	var self = this;
-	var inputBuffer = Buffer.alloc(0);	
-	transaction['inputs'].forEach(function (input) {
-		inputBuffer = Buffer.concat([inputBuffer, 
-			input['prevout'], 
-			self.createVarint(input['script'].length),
-			input['script'],
-			input['sequence']
-			]);
-	});
-
-	var outputBuffer = self.serializeTransactionOutputs(transaction);
-	if (typeof transaction['outputs'] != "undefined") {
-		outputBuffer = Buffer.concat([outputBuffer, transaction['locktime']]);
-	}
-
-	return Buffer.concat([
-		transaction['version'],
-		self.createVarint(transaction['inputs'].length),
-		inputBuffer,
-		outputBuffer]);
-}
-
-LedgerBtc.prototype.displayTransactionDebug = function(transaction) {
-	console.log("version " + transaction['version'].toString('hex'));
-	for (var i=0; i<transaction['inputs'].length; i++) {
-		var input = transaction['inputs'][i];
-		console.log("input " + i + " prevout " + input['prevout'].toString('hex') + " script " + input['script'].toString('hex') + " sequence " + input['sequence'].toString('hex')); 
-	}
-	for (var i=0; i<transaction['outputs'].length; i++) {
-		var output = transaction['outputs'][i];
-		console.log("output " + i + " amount " + output['amount'].toString('hex') + " script " + output['script'].toString('hex'));
-	}
-	console.log("locktime " + transaction['locktime'].toString('hex'));
-}
-
-
-LedgerBtc.MAX_SCRIPT_BLOCK = 50;
-LedgerBtc.DEFAULT_LOCKTIME = 0;
-LedgerBtc.DEFAULT_SEQUENCE = 0xffffffff;
-LedgerBtc.SIGHASH_ALL = 1;
-
-module.exports = LedgerBtc;
-
-
-}).call(this,require("buffer").Buffer)
-},{"./utils":12,"buffer":2,"q":6}],10:[function(require,module,exports){
+},{"./ledger-comm-u2f":10,"./ledger-qrl":11}],10:[function(require,module,exports){
 (function (global,Buffer){
 /********************************************************************************
 *   Ledger Node JS API
@@ -5839,165 +5249,201 @@ Ledger3.create_async = function(timeout) {
 module.exports = Ledger3
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer)
-},{"./chrome-u2f-api":7,"buffer":2,"q":6}],11:[function(require,module,exports){
+},{"./chrome-u2f-api":8,"buffer":2,"q":6}],11:[function(require,module,exports){
 (function (Buffer){
 /********************************************************************************
-*   Ledger Node JS API
-*   (c) 2016-2017 Ledger
-*
-*  Licensed under the Apache License, Version 2.0 (the "License");
-*  you may not use this file except in compliance with the License.
-*  You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-*  Unless required by applicable law or agreed to in writing, software
-*  distributed under the License is distributed on an "AS IS" BASIS,
-*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-*  See the License for the specific language governing permissions and
-*  limitations under the License.
-********************************************************************************/
+ *   Ledger Node JS API
+ *   (c) 2016-2017 Ledger
+ *   (c) 2018 ZondaX GmbH
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ ********************************************************************************/
 
 'use strict';
 
 var Q = require('q');
 var utils = require('./utils');
 
-var LedgerEth = function(comm) {
-	this.comm = comm;
-	this.comm.setScrambleKey('w0w');
+var LedgerQrl = function (comm) {
+    this.comm = comm;
+    this.comm.setScrambleKey('QRL');
+};
+
+const CLA = 0x77;
+
+const INS_VERSION             = 0x00;
+const INS_GETSTATE            = 0x01;
+const INS_PUBLIC_KEY          = 0x03;
+const INS_SIGN                = 0x04;
+const INS_SIGN_NEXT           = 0x05;
+
+/* These instructions are only enabled in test mode */
+const INS_TEST_PK_GEN_1       = 0x80;
+const INS_TEST_PK_GEN_2       = 0x81;
+const INS_TEST_CALC_PK        = 0x82;
+const INS_TEST_WRITE_LEAF     = 0x83;
+const INS_TEST_READ_LEAF      = 0x84;
+const INS_TEST_KEYGEN         = 0x85;
+const INS_TEST_DIGEST         = 0x86;
+const INS_TEST_SETSTATE       = 0x87;
+const INS_TEST_COMM           = 0x88;
+
+const APDU_ERROR_CODE_OK = 0x9000;
+
+function concatenateTypedArrays (resultConstructor, ...arrays) {
+    let totalLength = 0
+    for (let arr of arrays) {
+        totalLength += arr.length
+    }
+    let result = new resultConstructor(totalLength)
+    let offset = 0
+    for (let arr of arrays) {
+        result.set(arr, offset)
+        offset += arr.length
+    }
+    return result
 }
 
-LedgerEth.prototype.getAddress_async = function(path, boolDisplay, boolChaincode) {
-	var splitPath = utils.splitPath(path);
-	var buffer = new Buffer(5 + 1 + splitPath.length * 4);
-	buffer[0] = 0xe0;
-	buffer[1] = 0x02;
-	buffer[2] = (boolDisplay ? 0x01 : 0x00);
-	buffer[3] = (boolChaincode ? 0x01 : 0x00);
-	buffer[4] = 1 + splitPath.length * 4;
-	buffer[5] = splitPath.length;
-	splitPath.forEach(function (element, index) {
-		buffer.writeUInt32BE(element, 6 + 4 * index);
-	});
-	return this.comm.exchange(buffer.toString('hex'), [0x9000]).then(function(response) {
-		var result = {};
-		var response = new Buffer(response, 'hex');
-		var publicKeyLength = response[0];
-		var addressLength = response[1 + publicKeyLength];
-		result['publicKey'] = response.slice(1, 1 + publicKeyLength).toString('hex');
-		result['address'] = "0x" + response.slice(1 + publicKeyLength + 1, 1 + publicKeyLength + 1 + addressLength).toString('ascii');
-		if (boolChaincode) {
-			result['chainCode'] = response.slice(1 + publicKeyLength + 1 + addressLength, 1 + publicKeyLength + 1 + addressLength + 32).toString('hex');
-		}
-		return result;
-	});
+function bytesToHex (byteArray) {
+    return Array.from(byteArray, function(byte) {
+        return ('00' + (byte & 0xFF).toString(16)).slice(-2)
+    }).join('')
 }
 
-LedgerEth.prototype.signTransaction_async = function(path, rawTxHex) {
-	var splitPath = utils.splitPath(path);
-	var offset = 0;
-	var rawTx = new Buffer(rawTxHex, 'hex');
-	var apdus = [];
-	var response = [];
-	var self = this;	
-	while (offset != rawTx.length) {
-		var maxChunkSize = (offset == 0 ? (150 - 1 - splitPath.length * 4) : 150)
-		var chunkSize = (offset + maxChunkSize > rawTx.length ? rawTx.length - offset : maxChunkSize);
-		var buffer = new Buffer(offset == 0 ? 5 + 1 + splitPath.length * 4 + chunkSize : 5 + chunkSize);
-		buffer[0] = 0xe0;
-		buffer[1] = 0x04;
-		buffer[2] = (offset == 0 ? 0x00 : 0x80);
-		buffer[3] = 0x00;
-		buffer[4] = (offset == 0 ? 1 + splitPath.length * 4 + chunkSize : chunkSize);
-		if (offset == 0) {
-			buffer[5] = splitPath.length;
-			splitPath.forEach(function (element, index) {
-				buffer.writeUInt32BE(element, 6 + 4 * index);
-			});
-			rawTx.copy(buffer, 6 + 4 * splitPath.length, offset, offset + chunkSize);
-		}
-		else {
-			rawTx.copy(buffer, 5, offset, offset + chunkSize);
-		}
-		apdus.push(buffer.toString('hex'));
-		offset += chunkSize;
-	}
-	return utils.foreach(apdus, function(apdu) {
-		return self.comm.exchange(apdu, [0x9000]).then(function(apduResponse) {
-			response = apduResponse;
-		})
-	}).then(function() {		
-		response = new Buffer(response, 'hex');
-		var result = {};					
-		result['v'] = response.slice(0, 1).toString('hex');
-		result['r'] = response.slice(1, 1 + 32).toString('hex');
-		result['s'] = response.slice(1 + 32, 1 + 32 + 32).toString('hex');
-		return result;
-	})
+function serialize(CLA, INS, p1 = 0, p2 = 0, data = null) {
+    var size = 5;
+
+    var buffer = Buffer.alloc(size);
+    buffer[0] = CLA;
+    buffer[1] = INS;
+    buffer[2] = p1;
+    buffer[3] = p2;
+    buffer[4] = 0;
+
+    if (data != null) {
+        if (data.length > 255) {
+            throw new Error('maximum data size = 255');
+        }
+        buffer[4] = data.length;
+
+        // Add data to end of buffer
+        buffer = concatenateTypedArrays(
+          Uint8Array,
+            buffer,
+            data
+        )
+    }
+
+    return buffer;
 }
 
-LedgerEth.prototype.getAppConfiguration_async = function() {
-	var buffer = new Buffer(5);
-	buffer[0] = 0xe0;
-	buffer[1] = 0x06;
-	buffer[2] = 0x00;
-	buffer[3] = 0x00;
-	buffer[4] = 0x00;
-	return this.comm.exchange(buffer.toString('hex'), [0x9000]).then(function(response) {
-			var result = {};
-			var response = new Buffer(response, 'hex');
-			result['arbitraryDataEnabled'] = (response[0] & 0x01);
-			result['version'] = "" + response[1] + '.' + response[2] + '.' + response[3];
-			return result;
-	});
-}
+LedgerQrl.prototype.get_version = function () {
+    var buffer = serialize(CLA, INS_VERSION, 0, 0);
 
-LedgerEth.prototype.signPersonalMessage_async = function(path, messageHex) {
-	var splitPath = utils.splitPath(path);
-	var offset = 0;
-	var message = new Buffer(messageHex, 'hex');
-	var apdus = [];
-	var response = [];
-	var self = this;	
-	while (offset != message.length) {
-		var maxChunkSize = (offset == 0 ? (150 - 1 - splitPath.length * 4 - 4) : 150)
-		var chunkSize = (offset + maxChunkSize > message.length ? message.length - offset : maxChunkSize);
-		var buffer = new Buffer(offset == 0 ? 5 + 1 + splitPath.length * 4 + 4 + chunkSize : 5 + chunkSize);
-		buffer[0] = 0xe0;
-		buffer[1] = 0x08;
-		buffer[2] = (offset == 0 ? 0x00 : 0x80);
-		buffer[3] = 0x00;
-		buffer[4] = (offset == 0 ? 1 + splitPath.length * 4 + 4 + chunkSize : chunkSize);
-		if (offset == 0) {
-			buffer[5] = splitPath.length;
-			splitPath.forEach(function (element, index) {
-				buffer.writeUInt32BE(element, 6 + 4 * index);
-			});
-			buffer.writeUInt32BE(message.length, 6 + 4 * splitPath.length);
-			message.copy(buffer, 6 + 4 * splitPath.length + 4, offset, offset + chunkSize);
-		}
-		else {
-			message.copy(buffer, 5, offset, offset + chunkSize);
-		}
-		apdus.push(buffer.toString('hex'));
-		offset += chunkSize;
-	}
-	return utils.foreach(apdus, function(apdu) {
-		return self.comm.exchange(apdu, [0x9000]).then(function(apduResponse) {
-			response = apduResponse;
-		})
-	}).then(function() {		
-		response = new Buffer(response, 'hex');
-		var result = {};					
-		result['v'] = response[0];
-		result['r'] = response.slice(1, 1 + 32).toString('hex');
-		result['s'] = response.slice(1 + 32, 1 + 32 + 32).toString('hex');
-		return result;
-	})	
-}
+    return this.comm.exchange(buffer.toString("hex"), [0x9000]).then(
+        function (apduResponse) {
+            var result = {};
+            apduResponse = Buffer.from(apduResponse, 'hex');
+            let error_code_data = apduResponse.slice(-2);
 
-module.exports = LedgerEth;
+            result["test_mode"] = apduResponse[0] !== 0;
+            result["major"] = apduResponse[1];
+            result["minor"] = apduResponse[2];
+            result["patch"] = apduResponse[3];
+            result["return_code"] = error_code_data[0] * 256 + error_code_data[1];
+            return result;
+        });
+};
+
+LedgerQrl.prototype.get_state = function () {
+    var buffer = serialize(CLA, INS_GETSTATE, 0, 0);
+
+    return this.comm.exchange(buffer.toString('hex'), [0x9000]).then(
+        function (apduResponse) {
+            var result = {};
+            apduResponse = Buffer.from(apduResponse, 'hex');
+            let error_code_data = apduResponse.slice(-2);
+
+            result["state"] = apduResponse[0]; // 0 - Not ready, 1 - generating keys, 2 = ready
+            result["xmss_index"] = apduResponse[2] + apduResponse[1] * 256;
+            result["return_code"] = error_code_data[0] * 256 + error_code_data[1];
+            return result;
+        });
+};
+
+LedgerQrl.prototype.publickey = function () {
+    var buffer = serialize(CLA, INS_PUBLIC_KEY);
+
+    return this.comm.exchange(buffer.toString('hex'), [0x9000]).then(
+        function (apduResponse) {
+            var result = {};
+            apduResponse = Buffer.from(apduResponse, 'hex');
+            let error_code_data = apduResponse.slice(-2);
+
+            result["public_key"] = apduResponse.slice(0, apduResponse.length-2);
+            result["return_code"] = error_code_data[0] * 256 + error_code_data[1];
+            return result;
+        });
+};
+
+LedgerQrl.prototype.sign = function (message) {
+    var buffer = serialize(CLA, INS_SIGN, 0, 0, message);
+
+    return this.comm.exchange(bytesToHex(buffer), [0x9000]).then(
+        function (apduResponse) {
+            var result = {};
+            apduResponse = Buffer.from(apduResponse, 'hex');
+            let error_code_data = apduResponse.slice(-2);
+
+            result["signature_chunk"] = apduResponse.slice(0, apduResponse.length-2);
+            result["return_code"] = error_code_data[0] * 256 + error_code_data[1];
+
+            return result;
+        });
+};
+
+LedgerQrl.prototype.signNext = function () {
+    var buffer = serialize(CLA, INS_SIGN_NEXT);
+
+    return this.comm.exchange(buffer.toString('hex'), [0x9000]).then(
+        function (apduResponse) {
+            var result = {};
+            apduResponse = Buffer.from(apduResponse, 'hex');
+            let error_code_data = apduResponse.slice(-2);
+
+            result["signature_chunk"] = apduResponse.slice(0, apduResponse.length-2);
+            result["return_code"] = error_code_data[0] * 256 + error_code_data[1];
+            return result;
+        });
+};
+
+LedgerQrl.prototype.test_comm = function (count) {
+    let buffer = serialize(CLA, INS_TEST_COMM, count);
+
+    return this.comm.exchange(buffer.toString('hex'), [0x9000]).then(
+        function (apduResponse) {
+            var result = {};
+            apduResponse = Buffer.from(apduResponse, 'hex');
+            let error_code_data = apduResponse.slice(-2);
+
+            result["test_answer"] = apduResponse.slice(0, apduResponse.length-2);
+            result["return_code"] = error_code_data[0] * 256 + error_code_data[1];
+
+            return result;
+        });
+};
+
+module.exports = LedgerQrl;
 
 }).call(this,require("buffer").Buffer)
 },{"./utils":12,"buffer":2,"q":6}],12:[function(require,module,exports){
@@ -6094,5 +5540,5 @@ LedgerUtils.asyncWhile = function(condition, callback) {
 module.exports = LedgerUtils;
 
 
-},{"q":6}]},{},[8])(8)
+},{"q":6}]},{},[9])(9)
 });
