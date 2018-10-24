@@ -19,7 +19,7 @@
   },
   "homepage": "https://github.com/jleni/ledger-qrl-js",
   "dependencies": {
-    "node-hid": "0.5.4",
+    "node-hid": "0.5.5",
     "mocha": "^5.0.1",
     "chai": "^4.1.2",
     "q": "1.4.1"
