@@ -22,7 +22,8 @@
     "chai": "^4.2.0",
     "mocha": "^5.0.1",
     "node-hid": "^0.7.3",
-    "q": "^1.5.1"
+    "q": "^1.5.1",
+    "requirejs": "^2.3.6"
   },
   "devDependencies": {
     "browserify": "^16.2.3",

@@ -87,17 +87,17 @@ QrlLedger.publickey = function() {
 }
 
 QrlLedger.sign = function(txn) {
-  console.log('-- Calling ledger.qrl().sign(txn) --')
+  console.log('-- Calling ledger.qrl().signSend(txn) --')
   return comm.create_async(TIMEOUT, true).then(
     function (comm) {
       try {
         let qrl = new ledger.qrl(comm)
-        return qrl.sign(txn).then(function (result) {
+        return qrl.signSend(txn).then(function (result) {
           console.log(result)
           return result
         })
       } catch(e) {
-        console.log('---- Caught Error calling ledger.qrl().sign(txn) ----')
+        console.log('---- Caught Error calling ledger.qrl().signSend(txn) ----')
         console.log(e)
       }
     }
