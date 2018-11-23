@@ -32,8 +32,8 @@ else {
 TIMEOUT = 1000;
 TIMEOUT_KEYGEN = 15000;
 EXPECTED_MAJOR = 0;
-EXPECTED_MINOR = 1;
-EXPECTED_PATCH = 0;
+EXPECTED_MINOR = 3;
+EXPECTED_PATCH = 1;
 
 describe('get_state', function () {
     let response;
@@ -58,7 +58,7 @@ describe('get_state', function () {
     });
 
     it('has property mode', function () {
-        expect(response).to.have.a.property('mode');
+        expect(response).to.have.a.property('state');
     });
     it('has property xmss_index', function () {
         expect(response).to.have.a.property('xmss_index');

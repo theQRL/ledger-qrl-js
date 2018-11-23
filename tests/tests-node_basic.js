@@ -32,8 +32,8 @@ else {
 TIMEOUT = 1000;
 TIMEOUT_KEYGEN = 15000;
 EXPECTED_MAJOR = 0;
-EXPECTED_MINOR = 2;
-EXPECTED_PATCH = 0;
+EXPECTED_MINOR = 3;
+EXPECTED_PATCH = 1;
 
 describe('get_version', function () {
     let response;
