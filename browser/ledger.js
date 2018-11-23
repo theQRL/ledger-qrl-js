@@ -4463,20 +4463,20 @@ u2f.U2fResponse;
 u2f.Error;
 
 /**
- * Data object for a single sign request.
+ * Data object for a single signSend request.
  * @typedef {enum {BLUETOOTH_RADIO, BLUETOOTH_LOW_ENERGY, USB, NFC}}
  */
 u2f.Transport;
 
 
 /**
- * Data object for a single sign request.
+ * Data object for a single signSend request.
  * @typedef {Array<u2f.Transport>}
  */
 u2f.Transports;
 
 /**
- * Data object for a single sign request.
+ * Data object for a single signSend request.
  * @typedef {{
  *   version: string,
  *   challenge: string,
@@ -4488,7 +4488,7 @@ u2f.SignRequest;
 
 
 /**
- * Data object for a sign response.
+ * Data object for a signSend response.
  * @typedef {{
  *   keyHandle: string,
  *   signatureData: string,
@@ -4643,7 +4643,7 @@ u2f.WrappedChromeRuntimePort_ = function(port) {
 };
 
 /**
- * Format and return a sign request compliant with the JS API version supported by the extension.
+ * Format and return a signSend request compliant with the JS API version supported by the extension.
  * @param {Array<u2f.SignRequest>} signRequests
  * @param {number} timeoutSeconds
  * @param {number} reqId
@@ -4982,10 +4982,10 @@ u2f.responseHandler_ = function(message) {
 };
 
 /**
- * Dispatches an array of sign requests to available U2F tokens.
+ * Dispatches an array of signSend requests to available U2F tokens.
  * If the JS API version supported by the extension is unknown, it first sends a
  * message to the extension to find out the supported API version and then it sends
- * the sign request.
+ * the signSend request.
  * @param {string=} appId
  * @param {string=} challenge
  * @param {Array<u2f.RegisteredKey>} registeredKeys
@@ -4994,7 +4994,7 @@ u2f.responseHandler_ = function(message) {
  */
 u2f.sign = function(appId, challenge, registeredKeys, callback, opt_timeoutSeconds) {
   if (js_api_version === undefined) {
-    // Send a message to get the extension to JS API version, then send the actual sign request.
+    // Send a message to get the extension to JS API version, then send the actual signSend request.
     u2f.getApiVersion(
         function (response) {
           js_api_version = response['js_api_version'] === undefined ? 0 : response['js_api_version'];
@@ -5002,13 +5002,13 @@ u2f.sign = function(appId, challenge, registeredKeys, callback, opt_timeoutSecon
           u2f.sendSignRequest(appId, challenge, registeredKeys, callback, opt_timeoutSeconds);
         });
   } else {
-    // We know the JS API version. Send the actual sign request in the supported API version.
+    // We know the JS API version. Send the actual signSend request in the supported API version.
     u2f.sendSignRequest(appId, challenge, registeredKeys, callback, opt_timeoutSeconds);
   }
 };
 
 /**
- * Dispatches an array of sign requests to available U2F tokens.
+ * Dispatches an array of signSend requests to available U2F tokens.
  * @param {string=} appId
  * @param {string=} challenge
  * @param {Array<u2f.RegisteredKey>} registeredKeys
@@ -5027,7 +5027,7 @@ u2f.sendSignRequest = function(appId, challenge, registeredKeys, callback, opt_t
 };
 
 /**
- * Dispatches register requests to available U2F tokens. An array of sign
+ * Dispatches register requests to available U2F tokens. An array of signSend
  * requests identifies already registered tokens.
  * If the JS API version supported by the extension is unknown, it first sends a
  * message to the extension to find out the supported API version and then it sends
@@ -5056,7 +5056,7 @@ u2f.register = function(appId, registerRequests, registeredKeys, callback, opt_t
 };
 
 /**
- * Dispatches register requests to available U2F tokens. An array of sign
+ * Dispatches register requests to available U2F tokens. An array of signSend
  * requests identifies already registered tokens.
  * @param {string=} appId
  * @param {Array<u2f.RegisterRequest>} registerRequests

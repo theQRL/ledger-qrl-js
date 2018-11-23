@@ -14,19 +14,15 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  ********************************************************************************/
-
-var assert = require('assert');
-var expect = require('chai').expect;
-var Q = require('q');
+const expect = require('chai').expect;
 
 if (typeof ledger === 'undefined') {
     ledger = require('../src');
-    comm = ledger.comm_node;
+    comm = ledger.Comm_node;
     browser = false;
-}
-else {
+} else {
     browser = true;
-    comm = ledger.comm_u2f;
+    comm = ledger.Comm_u2f;
 }
 
 TIMEOUT = 1000;
@@ -41,7 +37,7 @@ describe('get_state', function () {
     before(function () {
         return comm.create_async(TIMEOUT, true).then(
             function (comm) {
-                let qrl = new ledger.qrl(comm);
+                let qrl = new ledger.Qrl(comm);
                 return qrl.get_state().then(function (result) {
                     response = result;
                     console.log(response);
@@ -72,7 +68,7 @@ describe('publickey', function () {
         this.timeout(TIMEOUT_KEYGEN);
         return comm.create_async(TIMEOUT_KEYGEN, true).then(
             function (comm) {
-                let qrl = new ledger.qrl(comm);
+                let qrl = new ledger.Qrl(comm);
                 return qrl.publickey().then(function (result) {
                     response = result;
                     console.log(response);
@@ -80,6 +76,65 @@ describe('publickey', function () {
             });
     });
     it('return_code is 0x9000', function () {
+        expect(response.return_code).to.equal(0x9000);
+    });
+});
+
+
+describe('sign_raw', function () {
+    /* ************************************************************** */
+    /* ************************************************************** */
+    /* ************************************************************** */
+    /* USING SIGN SEND IS NOT RECOMMENDED. THIS IS ONLY FOR TESTING */
+    /* ************************************************************** */
+    /* ************************************************************** */
+    /* ************************************************************** */
+    let response;
+
+    const basic_tx = Buffer.alloc(96);
+
+    // https://github.com/ZondaX/ledger-qrl-app/blob/e5daec2d4b159ea32665f3e4ac00b6a187364500/src/lib/qrl_types.h
+    basic_tx[0] = ledger.QrlConst.QRLTX_TX;
+    basic_tx[1] = 1;            // Number of destinations
+    // Keep all as zeros
+
+    // call API
+    before(function () {
+        this.timeout(TIMEOUT_KEYGEN);
+        return comm.create_async(TIMEOUT_KEYGEN, true).then(
+            function (comm) {
+                let qrl = new ledger.Qrl(comm);
+                return qrl.signSend(basic_tx).then(function (result) {
+                    response = result;
+                    console.log(response);
+                })
+            });
+    });
+    it('return_code is 0x9000', function () {
+        expect(response.return_code).to.equal(0x9000);
+    });
+});
+
+describe('sign_retrieve', function () {
+    // https://github.com/ZondaX/ledger-qrl-app/blob/e5daec2d4b159ea32665f3e4ac00b6a187364500/src/lib/qrl_types.h
+    const basic_tx = Buffer.alloc(96);
+    basic_tx[0] = ledger.QRLTX_TX;
+    basic_tx[1] = 1;            // Number of destinations
+    // Keep all as zeros
+
+    // call API
+    let response = {};
+    before(function () {
+        this.timeout(TIMEOUT_KEYGEN);
+        return comm.create_async(TIMEOUT_KEYGEN, true).then(async function (comm) {
+            let qrl = new ledger.Qrl(comm);
+            response = await qrl.retrieveSignature(basic_tx);
+            return response
+        });
+    });
+
+    it('return_code is 0x9000', function () {
+        console.log(response.error_message);
         expect(response.return_code).to.equal(0x9000);
     });
 });

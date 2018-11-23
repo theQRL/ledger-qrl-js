@@ -18,40 +18,13 @@
 
 'use strict';
 
-var Q = require('q');
-var utils = require('./utils');
+let Q = require('q');
+let QRL = require('./ledger-qrl-consts');
 
-var LedgerQrl = function (comm) {
+let LedgerQrl = function (comm) {
     this.comm = comm;
     this.comm.setScrambleKey('QRL');
 };
-
-const CLA = 0x77;
-
-const INS_VERSION             = 0x00;
-const INS_GETSTATE            = 0x01;
-const INS_PUBLIC_KEY          = 0x03;
-const INS_SIGN                = 0x04;
-const INS_SIGN_NEXT           = 0x05;
-
-/* These instructions are only enabled in test mode */
-const INS_TEST_PK_GEN_1       = 0x80;
-const INS_TEST_PK_GEN_2       = 0x81;
-const INS_TEST_CALC_PK        = 0x82;
-const INS_TEST_WRITE_LEAF     = 0x83;
-const INS_TEST_READ_LEAF      = 0x84;
-const INS_TEST_KEYGEN         = 0x85;
-const INS_TEST_DIGEST         = 0x86;
-const INS_TEST_SETSTATE       = 0x87;
-const INS_TEST_COMM           = 0x88;
-
-const APDU_ERROR_CODE_OK = 0x9000;
-
-function bytesToHex (byteArray) {
-    return Array.from(byteArray, function(byte) {
-        return ('00' + (byte & 0xFF).toString(16)).slice(-2)
-    }).join('')
-}
 
 function serialize(CLA, INS, p1 = 0, p2 = 0, data = null) {
     var size = 5;
@@ -77,8 +50,47 @@ function serialize(CLA, INS, p1 = 0, p2 = 0, data = null) {
     return buffer;
 }
 
+function errorMessage(error_code) {
+    switch (error_code) {
+        case 0x9000:
+            return "No errors";
+        case 0x9001:
+            return "Device is busy";
+        case 0x6400:
+            return "Execution Error";
+        case 0x6700:
+            return "Wrong Length";
+        case 0x6982:
+            return "Empty Buffer";
+        case 0x6983:
+            return "Output buffer too small";
+        case 0x6984:
+            return "Data is invalid";
+        case 0x6985:
+            return "Conditions not satisfied";
+        case 0x6986:
+            return "Command not allowed";
+        case 0x6A80:
+            return "Bad key handle";
+        case 0x6B00:
+            return "Invalid P1/P2";
+        case 0x6D00:
+            return "Instruction not supported";
+        case 0x6E00:
+            return "CLA not supported";
+        case 0x6F00:
+            return "Unknown error";
+        case 0x6F01:
+            return "Sign/verify error";
+        default:
+            return "Unknown error code";
+    }
+}
+
 LedgerQrl.prototype.get_version = function () {
-    var buffer = serialize(CLA, INS_VERSION, 0, 0);
+    let buffer = serialize(
+        QRL.CLA,
+        QRL.INS_VERSION, 0, 0);
 
     return this.comm.exchange(buffer.toString("hex"), [0x9000]).then(
         function (apduResponse) {
@@ -91,12 +103,22 @@ LedgerQrl.prototype.get_version = function () {
             result["minor"] = apduResponse[2];
             result["patch"] = apduResponse[3];
             result["return_code"] = error_code_data[0] * 256 + error_code_data[1];
+            result["error_message"] = errorMessage(result["return_code"]);
+            return result;
+        },
+        function (response) {
+            let result = {};
+            // Unfortunately, ledger returns an string!! :(
+            result["return_code"] = parseInt(response.slice(-4), 16);
+            result["error_message"] = errorMessage(result["return_code"]);
             return result;
         });
 };
 
 LedgerQrl.prototype.get_state = function () {
-    var buffer = serialize(CLA, INS_GETSTATE, 0, 0);
+    let buffer = serialize(
+        QRL.CLA,
+        QRL.INS_GETSTATE, 0, 0);
 
     return this.comm.exchange(buffer.toString('hex'), [0x9000]).then(
         function (apduResponse) {
@@ -107,12 +129,23 @@ LedgerQrl.prototype.get_state = function () {
             result["state"] = apduResponse[0]; // 0 - Not ready, 1 - generating keys, 2 = ready
             result["xmss_index"] = apduResponse[2] + apduResponse[1] * 256;
             result["return_code"] = error_code_data[0] * 256 + error_code_data[1];
+            result["error_message"] = errorMessage(result["return_code"]);
+
+            return result;
+        },
+        function (response) {
+            let result = {};
+            // Unfortunately, ledger returns an string!! :(
+            result["return_code"] = parseInt(response.slice(-4), 16);
+            result["error_message"] = errorMessage(result["return_code"]);
             return result;
         });
 };
 
 LedgerQrl.prototype.publickey = function () {
-    var buffer = serialize(CLA, INS_PUBLIC_KEY);
+    let buffer = serialize(
+        QRL.CLA,
+        QRL.INS_PUBLIC_KEY);
 
     return this.comm.exchange(buffer.toString('hex'), [0x9000]).then(
         function (apduResponse) {
@@ -120,30 +153,44 @@ LedgerQrl.prototype.publickey = function () {
             apduResponse = Buffer.from(apduResponse, 'hex');
             let error_code_data = apduResponse.slice(-2);
 
-            result["public_key"] = apduResponse.slice(0, apduResponse.length-2);
+            result["public_key"] = apduResponse.slice(0, apduResponse.length - 2);
             result["return_code"] = error_code_data[0] * 256 + error_code_data[1];
+            result["error_message"] = errorMessage(result["return_code"]);
+
             return result;
         });
 };
 
-LedgerQrl.prototype.sign = function (message) {
-    var buffer = serialize(CLA, INS_SIGN, 0, 0, message);
+LedgerQrl.prototype.signSend = function (message) {
+    let buffer = serialize(
+        QRL.CLA,
+        QRL.INS_SIGN, 0, 0, message);
 
-    return this.comm.exchange(bytesToHex(buffer), [0x9000]).then(
+    return this.comm.exchange(buffer.toString('hex'), [0x9000]).then(
         function (apduResponse) {
             var result = {};
             apduResponse = Buffer.from(apduResponse, 'hex');
             let error_code_data = apduResponse.slice(-2);
 
-            result["signature_chunk"] = apduResponse.slice(0, apduResponse.length-2);
+            result["signature_chunk"] = apduResponse.slice(0, apduResponse.length - 2);
             result["return_code"] = error_code_data[0] * 256 + error_code_data[1];
+            result["error_message"] = errorMessage(result["return_code"]);
 
+            return result;
+        },
+        function (response) {
+            let result = {};
+            // Unfortunately, ledger returns an string!! :(
+            result["return_code"] = parseInt(response.slice(-4), 16);
+            result["error_message"] = errorMessage(result["return_code"]);
             return result;
         });
 };
 
 LedgerQrl.prototype.signNext = function () {
-    var buffer = serialize(CLA, INS_SIGN_NEXT);
+    let buffer = serialize(
+        QRL.CLA,
+        QRL.INS_SIGN_NEXT);
 
     return this.comm.exchange(buffer.toString('hex'), [0x9000]).then(
         function (apduResponse) {
@@ -151,14 +198,25 @@ LedgerQrl.prototype.signNext = function () {
             apduResponse = Buffer.from(apduResponse, 'hex');
             let error_code_data = apduResponse.slice(-2);
 
-            result["signature_chunk"] = apduResponse.slice(0, apduResponse.length-2);
+            result["signature_chunk"] = apduResponse.slice(0, apduResponse.length - 2);
             result["return_code"] = error_code_data[0] * 256 + error_code_data[1];
+            result["error_message"] = errorMessage(result["return_code"]);
+
+            return result;
+        },
+        function (response) {
+            let result = {};
+            // Unfortunately, ledger returns an string!! :(
+            result["return_code"] = parseInt(response.slice(-4), 16);
+            result["error_message"] = errorMessage(result["return_code"]);
             return result;
         });
 };
 
 LedgerQrl.prototype.test_comm = function (count) {
-    let buffer = serialize(CLA, INS_TEST_COMM, count);
+    let buffer = serialize(
+        QRL.CLA,
+        QRL.INS_TEST_COMM, count);
 
     return this.comm.exchange(buffer.toString('hex'), [0x9000]).then(
         function (apduResponse) {
@@ -166,11 +224,55 @@ LedgerQrl.prototype.test_comm = function (count) {
             apduResponse = Buffer.from(apduResponse, 'hex');
             let error_code_data = apduResponse.slice(-2);
 
-            result["test_answer"] = apduResponse.slice(0, apduResponse.length-2);
+            result["test_answer"] = apduResponse.slice(0, apduResponse.length - 2);
             result["return_code"] = error_code_data[0] * 256 + error_code_data[1];
+            result["error_message"] = errorMessage(result["return_code"]);
 
             return result;
+        },
+        function (response) {
+            let result = {};
+            // Unfortunately, ledger returns an string!! :(
+            result["return_code"] = parseInt(response.slice(-4), 16);
+            result["error_message"] = errorMessage(result["return_code"]);
+            return result;
         });
+};
+
+LedgerQrl.prototype.retrieveSignature = async function(transaction) {
+    let myqrl = this;
+    return myqrl.signSend(transaction).then(async function (result) {
+        let response = {};
+        response["return_code"] = result.return_code;
+        response["error_message"] = result.error_message;
+        response["signature"] = null;
+
+        if (result.return_code === QRL.APDU_ERROR_CODE_OK) {
+            let signature = Buffer.alloc(0);
+            for (let i = 0; i < 11; i++) {
+
+                result = await myqrl.signNext();
+                if (result.return_code !== QRL.APDU_ERROR_CODE_OK) {
+                    response["return_code"] = result.return_code;
+                    response["error_message"] = result.error_message;
+                    break;
+                }
+
+                signature = Buffer.concat([signature, result.signature_chunk]);
+                response = result;
+            }
+            response["return_code"] = result.return_code;
+            response["error_message"] = result.error_message;
+            response["signature"] = signature;
+        }
+
+        console.log(response);
+        if (response.signature !== null) {
+            console.log(response.signature.length)
+        }
+
+        return response;
+    })
 };
 
 module.exports = LedgerQrl;
