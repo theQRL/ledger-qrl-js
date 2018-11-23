@@ -239,7 +239,7 @@ LedgerQrl.prototype.test_comm = function (count) {
         });
 };
 
-LedgerQrl.prototype.retrieveSignature = async function(transaction) {
+LedgerQrl.prototype.retrieveSignature = async function (transaction) {
     let myqrl = this;
     return myqrl.signSend(transaction).then(async function (result) {
         let response = {};
@@ -273,6 +273,56 @@ LedgerQrl.prototype.retrieveSignature = async function(transaction) {
 
         return response;
     })
+};
+
+LedgerQrl.prototype.createTx = function (source_address, fee, dest_addresses, dest_amounts) {
+    // https://github.com/ZondaX/ledger-qrl-app/src/lib/qrl_types.h
+
+    // Verify that sizes are valid
+    if (source_address.length !== QRL.P_TX_ADDRESS_SIZE) {
+        throw Error("maximum supported number of destinations is 3")
+    }
+
+    if (fee.length !== 8) {
+        throw Error("fee should be 8 bytes")
+    }
+
+    if (dest_addresses.length !== dest_amounts.length) {
+        throw Error("dest addresses and amount should have the same number of items")
+    }
+
+    if (dest_addresses.length > 3) {
+        throw Error("maximum supported number of destinations is 3")
+    }
+
+    for (let i = 0; i < dest_addresses.length; i++) {
+        if (dest_addresses[i].length !== QRL.P_TX_ADDRESS_SIZE) {
+            throw Error("maximum supported number of destinations is 3")
+        }
+        if (dest_amounts[i].length !== 8) {
+            throw Error("each dest_amount should be 8 bytes")
+        }
+    }
+
+    // Define buffer size
+    var num_dest = dest_addresses.length;
+    let tx = Buffer.alloc(2 + 47 * (1 + num_dest));
+
+    tx[QRL.P_TX_TYPE] = QRL.QRLTX_TX;
+    tx[QRL.P_TX_NUM_DEST] = num_dest;
+
+    source_address.copy(tx, QRL.P_TX_SRC_ADDR);
+    fee.copy(tx, QRL.P_TX_SRC_FEE);
+
+    let offset = QRL.P_TX_DEST;
+    for (let i = 0; i < dest_addresses.length; i++) {
+        dest_addresses[i].copy(tx, offset);
+        offset += QRL.P_TX_ADDRESS_SIZE;
+        dest_amounts[i].copy(tx, offset);
+        offset += 8;
+    }
+
+    return tx;
 };
 
 module.exports = LedgerQrl;

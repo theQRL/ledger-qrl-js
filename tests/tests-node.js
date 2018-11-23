@@ -26,7 +26,7 @@ if (typeof ledger === 'undefined') {
 }
 
 TIMEOUT = 1000;
-TIMEOUT_KEYGEN = 15000;
+TIMEOUT_KEYGEN = 25000;
 EXPECTED_MAJOR = 0;
 EXPECTED_MINOR = 3;
 EXPECTED_PATCH = 1;
@@ -115,20 +115,36 @@ describe('sign_raw', function () {
     });
 });
 
-describe('sign_retrieve', function () {
-    // https://github.com/ZondaX/ledger-qrl-app/blob/e5daec2d4b159ea32665f3e4ac00b6a187364500/src/lib/qrl_types.h
-    const basic_tx = Buffer.alloc(96);
-    basic_tx[0] = ledger.QRLTX_TX;
-    basic_tx[1] = 1;            // Number of destinations
-    // Keep all as zeros
+function getDummyAddr(val){
+    let tmp = Buffer.alloc(39);
+    for (let i = 0; i<39; i++){
+        tmp[i] = val;
+    }
+    return tmp;
+}
 
+describe('sign_retrieve', function () {
     // call API
     let response = {};
     before(function () {
         this.timeout(TIMEOUT_KEYGEN);
         return comm.create_async(TIMEOUT_KEYGEN, true).then(async function (comm) {
             let qrl = new ledger.Qrl(comm);
-            response = await qrl.retrieveSignature(basic_tx);
+
+            // Create a transaction
+            let source_addr = getDummyAddr(5);
+            let fee = Buffer.from([0,0,0,1,0,0,0,8]);
+
+            let dest_addr = [getDummyAddr(6), getDummyAddr(7)];
+
+            let dest_amount = [
+                Buffer.from([0,0,0,0,0,1,0,8]),
+                Buffer.from([0,0,0,0,1,0,0,8])];
+
+            let tx = qrl.createTx(source_addr, fee, dest_addr, dest_amount);
+
+            // Send transaction
+            response = await qrl.retrieveSignature(tx);
             return response
         });
     });

@@ -47,4 +47,14 @@ module.exports = {
     QRLTX_TXTOKEN: 1,
     QRLTX_SLAVE: 2,
     QRLTX_MESSAGE: 3,
+
+    // Based on https://github.com/ZondaX/ledger-qrl-app/src/lib/qrl_types.h
+    P_TX_ADDRESS_SIZE : 39,
+
+    P_TX_TYPE : 0,
+    P_TX_NUM_DEST : 1,
+    P_TX_SRC_ADDR : 2,
+    P_TX_SRC_FEE : 41,
+    P_TX_DEST : 49
+
 };
