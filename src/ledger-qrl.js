@@ -47,20 +47,6 @@ const INS_TEST_COMM           = 0x88;
 
 const APDU_ERROR_CODE_OK = 0x9000;
 
-function concatenateTypedArrays (resultConstructor, ...arrays) {
-    let totalLength = 0
-    for (let arr of arrays) {
-        totalLength += arr.length
-    }
-    let result = new resultConstructor(totalLength)
-    let offset = 0
-    for (let arr of arrays) {
-        result.set(arr, offset)
-        offset += arr.length
-    }
-    return result
-}
-
 function bytesToHex (byteArray) {
     return Array.from(byteArray, function(byte) {
         return ('00' + (byte & 0xFF).toString(16)).slice(-2)
@@ -69,6 +55,12 @@ function bytesToHex (byteArray) {
 
 function serialize(CLA, INS, p1 = 0, p2 = 0, data = null) {
     var size = 5;
+    if (data != null) {
+        if (data.length > 255) {
+            throw new Error('maximum data size = 255');
+        }
+        size += data.length
+    }
 
     var buffer = Buffer.alloc(size);
     buffer[0] = CLA;
@@ -78,17 +70,8 @@ function serialize(CLA, INS, p1 = 0, p2 = 0, data = null) {
     buffer[4] = 0;
 
     if (data != null) {
-        if (data.length > 255) {
-            throw new Error('maximum data size = 255');
-        }
         buffer[4] = data.length;
-
-        // Add data to end of buffer
-        buffer = concatenateTypedArrays(
-          Uint8Array,
-            buffer,
-            data
-        )
+        buffer.set(data, 5);
     }
 
     return buffer;
