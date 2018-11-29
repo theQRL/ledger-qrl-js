@@ -121,4 +121,37 @@ QrlLedger.signNext = function() {
   )
 }
 
+QrlLedger.createTx = function(source_addr, fee, dest_addr, dest_amount) {
+  console.log('-- Calling ledger.qrl().createTx(source_addr, fee, dest_addr, dest_amount) --')
+  return comm.create_async(TIMEOUT, true).then(
+    function (comm) {
+      try {
+        let qrl = new ledger.qrl(comm)
+        return qrl.createTx(source_addr, fee, dest_addr, dest_amount)
+      } catch(e) {
+        console.log('---- Caught Error calling ledger.qrl().createTx(source_addr, fee, dest_addr, dest_amount) ----')
+        console.log(e)
+      }
+    }
+  )
+}
+
+QrlLedger.retrieveSignature = function(txn) {
+  console.log('-- Calling ledger.qrl().retrieveSignature(txn) --')
+  return comm.create_async(TIMEOUT, true).then(
+    function (comm) {
+      try {
+        let qrl = new ledger.qrl(comm)
+        return qrl.retrieveSignature(txn).then(function (result) {
+          console.log(result)
+          return result
+        })
+      } catch(e) {
+        console.log('---- Caught Error calling ledger.qrl().retrieveSignature(txn) ----')
+        console.log(e)
+      }
+    }
+  )
+}
+
 module.exports = QrlLedger
