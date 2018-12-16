@@ -154,4 +154,19 @@ QrlLedger.retrieveSignature = function(txn) {
   )
 }
 
+QrlLedger.setIdx = function(idx) {
+  console.log('-- Calling ledger.qrl().setIdx(idx) --')
+  return comm.create_async(TIMEOUT, true).then(
+    function (comm) {
+      try {
+        let qrl = new ledger.qrl(comm)
+        return qrl.setIdx(idx)
+      } catch(e) {
+        console.log('---- Caught Error calling ledger.qrl().setIdx(idx) ----')
+        console.log(e)
+      }
+    }
+  )
+}
+
 module.exports = QrlLedger

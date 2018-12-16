@@ -27,6 +27,7 @@ module.exports = {
     INS_PUBLIC_KEY: 0x03,
     INS_SIGN: 0x04,
     INS_SIGN_NEXT: 0x05,
+    INS_SETIDX: 0x06,
 
     // Test instructions
     /* These instructions are only enabled in test mode */
