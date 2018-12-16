@@ -50,6 +50,20 @@ function serialize(CLA, INS, p1 = 0, p2 = 0, data = null) {
     return buffer;
 }
 
+function concatenateTypedArrays (resultConstructor, ...arrays) {
+    let totalLength = 0
+    for (let arr of arrays) {
+      totalLength += arr.length
+    }
+    let result = new resultConstructor(totalLength)
+    let offset = 0
+    for (let arr of arrays) {
+      result.set(arr, offset)
+      offset += arr.length
+    }
+    return result
+}
+
 function errorMessage(error_code) {
     switch (error_code) {
         case 0x9000:
@@ -202,6 +216,44 @@ LedgerQrl.prototype.signNext = function () {
             result["return_code"] = error_code_data[0] * 256 + error_code_data[1];
             result["error_message"] = errorMessage(result["return_code"]);
 
+            console.log('apduResponse')
+            console.log(apduResponse)
+            console.log(result)
+
+            return result;
+        },
+        function (response) {
+            let result = {};
+            // Unfortunately, ledger returns an string!! :(
+            result["return_code"] = parseInt(response.slice(-4), 16);
+            result["error_message"] = errorMessage(result["return_code"]);
+            return result;
+        });
+};
+
+LedgerQrl.prototype.setIdx = function (idx) {
+    let buffer = serialize(
+        QRL.CLA,
+        QRL.INS_SETIDX, 0, 0, idx);
+
+    console.log('send idx')
+    console.log(buffer.toString('hex'))
+
+    return this.comm.exchange(buffer.toString('hex'), [0x9000]).then(
+        function (apduResponse) {
+            var result = {};
+            apduResponse = Buffer.from(apduResponse, 'hex');
+
+            let error_code_data = apduResponse.slice(-2);
+
+            result["signature_chunk"] = apduResponse.slice(0, apduResponse.length - 2);
+            result["return_code"] = error_code_data[0] * 256 + error_code_data[1];
+            result["error_message"] = errorMessage(result["return_code"]);
+
+            console.log('apduResponse')
+            console.log(apduResponse)
+            console.log(result)
+
             return result;
         },
         function (response) {
@@ -243,14 +295,14 @@ LedgerQrl.prototype.retrieveSignature = async function (transaction) {
     let myqrl = this;
     return myqrl.signSend(transaction).then(async function (result) {
         let response = {};
+
         response["return_code"] = result.return_code;
         response["error_message"] = result.error_message;
         response["signature"] = null;
 
         if (result.return_code === QRL.APDU_ERROR_CODE_OK) {
-            let signature = Buffer.alloc(0);
+            let signature = new Uint8Array()
             for (let i = 0; i < 11; i++) {
-
                 result = await myqrl.signNext();
                 if (result.return_code !== QRL.APDU_ERROR_CODE_OK) {
                     response["return_code"] = result.return_code;
@@ -258,17 +310,16 @@ LedgerQrl.prototype.retrieveSignature = async function (transaction) {
                     break;
                 }
 
-                signature = Buffer.concat([signature, result.signature_chunk]);
+                signature = concatenateTypedArrays(
+                    Uint8Array,
+                        signature,
+                        result.signature_chunk
+                );
                 response = result;
             }
             response["return_code"] = result.return_code;
             response["error_message"] = result.error_message;
             response["signature"] = signature;
-        }
-
-        console.log(response);
-        if (response.signature !== null) {
-            console.log(response.signature.length)
         }
 
         return response;
