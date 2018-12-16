@@ -51,6 +51,7 @@ module.exports = {
 
     // Based on https://github.com/ZondaX/ledger-qrl-app/src/lib/qrl_types.h
     P_TX_ADDRESS_SIZE : 39,
+    P_TX_MAX_MESSAGE_SIZE : 80,
 
     P_TX_TYPE : 0,
     P_TX_NUM_DEST : 1,

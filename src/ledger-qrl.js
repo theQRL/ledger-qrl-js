@@ -331,7 +331,7 @@ LedgerQrl.prototype.createTx = function (source_address, fee, dest_addresses, de
 
     // Verify that sizes are valid
     if (source_address.length !== QRL.P_TX_ADDRESS_SIZE) {
-        throw Error("maximum supported number of destinations is 3")
+        throw Error("Source address length invalid")
     }
 
     if (fee.length !== 8) {
@@ -348,7 +348,7 @@ LedgerQrl.prototype.createTx = function (source_address, fee, dest_addresses, de
 
     for (let i = 0; i < dest_addresses.length; i++) {
         if (dest_addresses[i].length !== QRL.P_TX_ADDRESS_SIZE) {
-            throw Error("maximum supported number of destinations is 3")
+            throw Error("Destination address length invalid")
         }
         if (dest_amounts[i].length !== 8) {
             throw Error("each dest_amount should be 8 bytes")
@@ -372,6 +372,38 @@ LedgerQrl.prototype.createTx = function (source_address, fee, dest_addresses, de
         dest_amounts[i].copy(tx, offset);
         offset += 8;
     }
+
+    return tx;
+};
+
+LedgerQrl.prototype.createMessageTx = function (source_address, fee, message) {
+    // https://github.com/ZondaX/ledger-qrl-app/src/lib/qrl_types.h
+
+    // Verify that sizes are valid
+    if (source_address.length !== QRL.P_TX_ADDRESS_SIZE) {
+        throw Error("Source address length invalid")
+    }
+
+    if (fee.length !== 8) {
+        throw Error("fee should be 8 bytes")
+    }
+
+    if (message.length > QRL.P_TX_MAX_MESSAGE_SIZE) {
+        throw Error("Message length exceed maximum size")
+    }
+
+    // Define buffer size
+    var num_dest = 1;
+    let tx = Buffer.alloc(2 + 47 + (message.length));
+
+    tx[QRL.P_TX_TYPE] = QRL.QRLTX_MESSAGE;
+    tx[QRL.P_TX_NUM_DEST] = num_dest;
+
+    source_address.copy(tx, QRL.P_TX_SRC_ADDR);
+    fee.copy(tx, QRL.P_TX_SRC_FEE);
+
+    let offset = message.length
+    message.copy(tx, offset)
 
     return tx;
 };

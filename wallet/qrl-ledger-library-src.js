@@ -136,6 +136,21 @@ QrlLedger.createTx = function(source_addr, fee, dest_addr, dest_amount) {
   )
 }
 
+QrlLedger.createMessageTx = function(source_addr, fee, message) {
+  console.log('-- Calling ledger.qrl().createMessageTx(source_addr, fee, message) --')
+  return comm.create_async(TIMEOUT, true).then(
+    function (comm) {
+      try {
+        let qrl = new ledger.qrl(comm)
+        return qrl.createMessageTx(source_addr, fee, message)
+      } catch(e) {
+        console.log('---- Caught Error calling ledger.qrl().createMessageTx(source_addr, fee, message) ----')
+        console.log(e)
+      }
+    }
+  )
+}
+
 QrlLedger.retrieveSignature = function(txn) {
   console.log('-- Calling ledger.qrl().retrieveSignature(txn) --')
   return comm.create_async(TIMEOUT, true).then(
