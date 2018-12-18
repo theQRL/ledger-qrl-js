@@ -1,4 +1,10 @@
 # ledger-qrl-js
+For the QRL Ledger Nano S app refer to https://github.com/theQRL/ledger-qrl
+
+----------
+
+## Purpose
+
 Node and browser communication APIs for Ledger Nano S
 
 This repo is based on https://github.com/LedgerHQ/ledgerjs
