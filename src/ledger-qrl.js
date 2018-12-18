@@ -234,7 +234,7 @@ LedgerQrl.prototype.signNext = function () {
 };
 
 LedgerQrl.prototype.setIdx = function (idx) {
-    if (idx < 255 || idx > 255) {
+    if (idx < 0 || idx > 255) {
         let result = {};
         result["return_code"] = 0x6984;
         result["error_message"] = errorMessage(result["return_code"]);
