@@ -402,7 +402,7 @@ LedgerQrl.prototype.createMessageTx = function (source_address, fee, message) {
 
     source_address.copy(tx, QRL.P_TX_SRC_ADDR);
     fee.copy(tx, QRL.P_TX_SRC_FEE);
-    message.copy(tx, messageLength)
+    message.copy(tx, 49)
 
     return tx;
 };
