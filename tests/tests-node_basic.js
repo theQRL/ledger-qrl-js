@@ -14,26 +14,25 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  ********************************************************************************/
-
-var assert = require('assert');
-var expect = require('chai').expect;
-var Q = require('q');
+const expect = require('chai').expect;
 
 if (typeof ledger === 'undefined') {
     ledger = require('../src');
-    comm = ledger.comm_node;
+    comm = ledger.Comm_node;
     browser = false;
+    console.log("Running Node Version\n");
 }
 else {
     browser = true;
-    comm = ledger.comm_u2f;
+    comm = ledger.Comm_u2f;
+    console.log("Running U2F Version\n");
 }
 
 TIMEOUT = 1000;
 TIMEOUT_KEYGEN = 15000;
 EXPECTED_MAJOR = 0;
-EXPECTED_MINOR = 3;
-EXPECTED_PATCH = 1;
+EXPECTED_MINOR = 4;
+EXPECTED_PATCH = 0;
 
 describe('get_version', function () {
     let response;
@@ -41,7 +40,7 @@ describe('get_version', function () {
     before(function () {
         return comm.create_async(TIMEOUT, true).then(
                 function (comm) {
-                    let qrl = new ledger.qrl(comm);
+                    let qrl = new ledger.Qrl(comm);
                     return qrl.get_version().then(function (result) {
                         response = result;
                         console.log(response);
@@ -79,7 +78,7 @@ describe('test_comm(5)', function () {
     before(function () {
         return comm.create_async(TIMEOUT, true).then(
             function (comm) {
-                let qrl = new ledger.qrl(comm);
+                let qrl = new ledger.Qrl(comm);
                 return qrl.test_comm(5).then(function (result) {
                     response = result;
                     console.log(response);

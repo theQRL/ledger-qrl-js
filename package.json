@@ -1,6 +1,6 @@
 {
   "name": "ledger-qrl-js",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Node API for Ledger Nano S - QRL app",
   "main": "./src/index.js",
   "repository": {
@@ -21,7 +21,7 @@
   "dependencies": {
     "chai": "^4.2.0",
     "mocha": "^5.0.1",
-    "node-hid": "^0.7.3",
+    "node-hid": "^0.7.4",
     "q": "^1.5.1",
     "requirejs": "^2.3.6"
   },
