@@ -394,17 +394,15 @@ LedgerQrl.prototype.createMessageTx = function (source_address, fee, message) {
     }
 
     // Define buffer size
-    var num_dest = 1;
-    let tx = Buffer.alloc(2 + 47 + (message.length));
+    let messageLength = message.length;
+    let tx = Buffer.alloc(2 + 47 + (messageLength));
 
     tx[QRL.P_TX_TYPE] = QRL.QRLTX_MESSAGE;
-    tx[QRL.P_TX_NUM_DEST] = num_dest;
+    tx[QRL.P_TX_NUM_DEST] = messageLength;
 
     source_address.copy(tx, QRL.P_TX_SRC_ADDR);
     fee.copy(tx, QRL.P_TX_SRC_FEE);
-
-    let offset = message.length
-    message.copy(tx, offset)
+    message.copy(tx, messageLength)
 
     return tx;
 };
