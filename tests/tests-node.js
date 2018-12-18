@@ -20,9 +20,11 @@ if (typeof ledger === 'undefined') {
     ledger = require('../src');
     comm = ledger.Comm_node;
     browser = false;
+    console.log("Running Node Version\n");
 } else {
     browser = true;
     comm = ledger.Comm_u2f;
+    console.log("Running U2F Version\n");
 }
 
 TIMEOUT = 1000;
@@ -49,15 +51,34 @@ describe('get_state', function () {
         expect(response.return_code).to.equal(0x9000);
     });
 
-    it('get_state has property test_mode', function () {
-        expect(response);
-    });
-
     it('has property mode', function () {
         expect(response).to.have.a.property('state');
     });
     it('has property xmss_index', function () {
         expect(response).to.have.a.property('xmss_index');
+    });
+});
+
+describe('set_idx', function () {
+    let response;
+    // call API
+    before(function () {
+        this.timeout(TIMEOUT_KEYGEN);
+        return comm.create_async(TIMEOUT_KEYGEN, true).then(
+            function (comm) {
+                let qrl = new ledger.Qrl(comm);
+
+                new_index = 10;
+
+                return qrl.setIdx(new_index).then(function (result) {
+                    response = result;
+                    console.log(response);
+                })
+            });
+    });
+
+    it('return_code is 0x9000', function () {
+        expect(response.return_code).to.equal(0x9000);
     });
 });
 

@@ -66,6 +66,8 @@ function concatenateTypedArrays (resultConstructor, ...arrays) {
 
 function errorMessage(error_code) {
     switch (error_code) {
+        case 14:
+            return "Timeout";
         case 0x9000:
             return "No errors";
         case 0x9001:
@@ -232,12 +234,16 @@ LedgerQrl.prototype.signNext = function () {
 };
 
 LedgerQrl.prototype.setIdx = function (idx) {
+    if (idx < 255 || idx > 255) {
+        let result = {};
+        result["return_code"] = 0x6984;
+        result["error_message"] = errorMessage(result["return_code"]);
+        return result;
+    }
+
     let buffer = serialize(
         QRL.CLA,
-        QRL.INS_SETIDX, 0, 0, idx);
-
-    console.log('send idx')
-    console.log(buffer.toString('hex'))
+        QRL.INS_SETIDX, 0, 0, [idx]);
 
     return this.comm.exchange(buffer.toString('hex'), [0x9000]).then(
         function (apduResponse) {
@@ -246,13 +252,8 @@ LedgerQrl.prototype.setIdx = function (idx) {
 
             let error_code_data = apduResponse.slice(-2);
 
-            result["signature_chunk"] = apduResponse.slice(0, apduResponse.length - 2);
             result["return_code"] = error_code_data[0] * 256 + error_code_data[1];
             result["error_message"] = errorMessage(result["return_code"]);
-
-            console.log('apduResponse')
-            console.log(apduResponse)
-            console.log(result)
 
             return result;
         },
