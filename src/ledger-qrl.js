@@ -123,11 +123,26 @@ LedgerQrl.prototype.get_version = function () {
             return result;
         },
         function (response) {
+            // Error handling
             let result = {};
-            // Unfortunately, ledger returns an string!! :(
-            result["return_code"] = parseInt(response.slice(-4), 16);
-            result["error_message"] = errorMessage(result["return_code"]);
-            return result;
+            if(typeof response.errorCode !== 'undefined') {
+                if(response.errorCode === 5) {
+                    // Timeout
+                    result["return_code"] = 14;
+                    result["error_message"] = errorMessage(result["return_code"]);
+                    return result;
+                } else {
+                    // Error
+                    result["return_code"] = response.errorCode;
+                    result["error_message"] = errorMessage(result["return_code"]);
+                    return result;
+                }
+            } else {
+                // Error
+                result["return_code"] = parseInt(response.slice(-4), 16);
+                result["error_message"] = errorMessage(result["return_code"]);
+                return result;
+            }
         });
 };
 
@@ -150,11 +165,26 @@ LedgerQrl.prototype.get_state = function () {
             return result;
         },
         function (response) {
+            // Error handling
             let result = {};
-            // Unfortunately, ledger returns an string!! :(
-            result["return_code"] = parseInt(response.slice(-4), 16);
-            result["error_message"] = errorMessage(result["return_code"]);
-            return result;
+            if(typeof response.errorCode !== 'undefined') {
+                if(response.errorCode === 5) {
+                    // Timeout
+                    result["return_code"] = 14;
+                    result["error_message"] = errorMessage(result["return_code"]);
+                    return result;
+                } else {
+                    // Error
+                    result["return_code"] = response.errorCode;
+                    result["error_message"] = errorMessage(result["return_code"]);
+                    return result;
+                }
+            } else {
+                // Error
+                result["return_code"] = parseInt(response.slice(-4), 16);
+                result["error_message"] = errorMessage(result["return_code"]);
+                return result;
+            }
         });
 };
 
@@ -174,6 +204,28 @@ LedgerQrl.prototype.publickey = function () {
             result["error_message"] = errorMessage(result["return_code"]);
 
             return result;
+        },
+        function (response) {
+            // Error handling
+            let result = {};
+            if(typeof response.errorCode !== 'undefined') {
+                if(response.errorCode === 5) {
+                    // Timeout
+                    result["return_code"] = 14;
+                    result["error_message"] = errorMessage(result["return_code"]);
+                    return result;
+                } else {
+                    // Error
+                    result["return_code"] = response.errorCode;
+                    result["error_message"] = errorMessage(result["return_code"]);
+                    return result;
+                }
+            } else {
+                // Error
+                result["return_code"] = parseInt(response.slice(-4), 16);
+                result["error_message"] = errorMessage(result["return_code"]);
+                return result;
+            }
         });
 };
 
@@ -195,11 +247,26 @@ LedgerQrl.prototype.signSend = function (message) {
             return result;
         },
         function (response) {
+            // Error handling
             let result = {};
-            // Unfortunately, ledger returns an string!! :(
-            result["return_code"] = parseInt(response.slice(-4), 16);
-            result["error_message"] = errorMessage(result["return_code"]);
-            return result;
+            if(typeof response.errorCode !== 'undefined') {
+                if(response.errorCode === 5) {
+                    // Timeout
+                    result["return_code"] = 14;
+                    result["error_message"] = errorMessage(result["return_code"]);
+                    return result;
+                } else {
+                    // Error
+                    result["return_code"] = response.errorCode;
+                    result["error_message"] = errorMessage(result["return_code"]);
+                    return result;
+                }
+            } else {
+                // Error
+                result["return_code"] = parseInt(response.slice(-4), 16);
+                result["error_message"] = errorMessage(result["return_code"]);
+                return result;
+            }
         });
 };
 
@@ -225,11 +292,26 @@ LedgerQrl.prototype.signNext = function () {
             return result;
         },
         function (response) {
+            // Error handling
             let result = {};
-            // Unfortunately, ledger returns an string!! :(
-            result["return_code"] = parseInt(response.slice(-4), 16);
-            result["error_message"] = errorMessage(result["return_code"]);
-            return result;
+            if(typeof response.errorCode !== 'undefined') {
+                if(response.errorCode === 5) {
+                    // Timeout
+                    result["return_code"] = 14;
+                    result["error_message"] = errorMessage(result["return_code"]);
+                    return result;
+                } else {
+                    // Error
+                    result["return_code"] = response.errorCode;
+                    result["error_message"] = errorMessage(result["return_code"]);
+                    return result;
+                }
+            } else {
+                // Error
+                result["return_code"] = parseInt(response.slice(-4), 16);
+                result["error_message"] = errorMessage(result["return_code"]);
+                return result;
+            }
         });
 };
 
@@ -258,11 +340,26 @@ LedgerQrl.prototype.setIdx = function (idx) {
             return result;
         },
         function (response) {
+            // Error handling
             let result = {};
-            // Unfortunately, ledger returns an string!! :(
-            result["return_code"] = parseInt(response.slice(-4), 16);
-            result["error_message"] = errorMessage(result["return_code"]);
-            return result;
+            if(typeof response.errorCode !== 'undefined') {
+                if(response.errorCode === 5) {
+                    // Timeout
+                    result["return_code"] = 14;
+                    result["error_message"] = errorMessage(result["return_code"]);
+                    return result;
+                } else {
+                    // Error
+                    result["return_code"] = response.errorCode;
+                    result["error_message"] = errorMessage(result["return_code"]);
+                    return result;
+                }
+            } else {
+                // Error
+                result["return_code"] = parseInt(response.slice(-4), 16);
+                result["error_message"] = errorMessage(result["return_code"]);
+                return result;
+            }
         });
 };
 
@@ -284,11 +381,26 @@ LedgerQrl.prototype.test_comm = function (count) {
             return result;
         },
         function (response) {
+            // Error handling
             let result = {};
-            // Unfortunately, ledger returns an string!! :(
-            result["return_code"] = parseInt(response.slice(-4), 16);
-            result["error_message"] = errorMessage(result["return_code"]);
-            return result;
+            if(typeof response.errorCode !== 'undefined') {
+                if(response.errorCode === 5) {
+                    // Timeout
+                    result["return_code"] = 14;
+                    result["error_message"] = errorMessage(result["return_code"]);
+                    return result;
+                } else {
+                    // Error
+                    result["return_code"] = response.errorCode;
+                    result["error_message"] = errorMessage(result["return_code"]);
+                    return result;
+                }
+            } else {
+                // Error
+                result["return_code"] = parseInt(response.slice(-4), 16);
+                result["error_message"] = errorMessage(result["return_code"]);
+                return result;
+            }
         });
 };
 
