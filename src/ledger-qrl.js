@@ -363,6 +363,32 @@ LedgerQrl.prototype.setIdx = function (idx) {
         });
 };
 
+LedgerQrl.prototype.viewAddress = function () {
+    let buffer = serialize(
+        QRL.CLA,
+        QRL.INS_VIEW_ADDRESS, 0, 0, []);
+
+    return this.comm.exchange(buffer.toString('hex'), [0x9000]).then(
+        function (apduResponse) {
+            var result = {};
+            apduResponse = Buffer.from(apduResponse, 'hex');
+
+            let error_code_data = apduResponse.slice(-2);
+
+            result["return_code"] = error_code_data[0] * 256 + error_code_data[1];
+            result["error_message"] = errorMessage(result["return_code"]);
+
+            return result;
+        },
+        function (response) {
+            let result = {};
+            // Unfortunately, ledger returns an string!! :(
+            result["return_code"] = parseInt(response.slice(-4), 16);
+            result["error_message"] = errorMessage(result["return_code"]);
+            return result;
+        });
+};
+
 LedgerQrl.prototype.test_comm = function (count) {
     let buffer = serialize(
         QRL.CLA,

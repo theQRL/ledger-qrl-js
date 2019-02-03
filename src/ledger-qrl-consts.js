@@ -28,6 +28,7 @@ module.exports = {
     INS_SIGN: 0x04,
     INS_SIGN_NEXT: 0x05,
     INS_SETIDX: 0x06,
+    INS_VIEW_ADDRESS: 0x07,
 
     // Test instructions
     /* These instructions are only enabled in test mode */
