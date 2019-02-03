@@ -16,7 +16,7 @@ else {
 }
 
 // Constants
-const LIBRARY_VERSION = '0.3.0'
+const LIBRARY_VERSION = '0.3.1'
 const TIMEOUT_SECONDS = 25
 
 // Create object to store all library functions in
@@ -251,6 +251,21 @@ QrlLedger.setIdx = function(idx) {
         console.log('---- Caught Error calling ledger.qrl().setIdx(idx) ----')
         console.log(e)
         return e
+      }
+    }
+  )
+}
+
+QrlLedger.viewAddress = function() {
+  console.log('-- Calling ledger.qrl().viewAddress() --')
+  return comm.create_async(TIMEOUT, true).then(
+    function (comm) {
+      try {
+        let qrl = new ledger.qrl(comm)
+        return qrl.viewAddress()
+      } catch(e) {
+        console.log('---- Caught Error calling ledger.qrl().viewAddress() ----')
+        console.log(e)
       }
     }
   )
