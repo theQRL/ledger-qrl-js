@@ -16,7 +16,7 @@ else {
 }
 
 // Constants
-const LIBRARY_VERSION = '0.3.1'
+const LIBRARY_VERSION = '0.3.2'
 const TIMEOUT_SECONDS = 25
 
 // Create object to store all library functions in
