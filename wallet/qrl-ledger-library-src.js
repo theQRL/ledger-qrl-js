@@ -184,4 +184,19 @@ QrlLedger.setIdx = function(idx) {
   )
 }
 
+QrlLedger.viewAddress = function() {
+  console.log('-- Calling ledger.qrl().viewAddress() --')
+  return comm.create_async(TIMEOUT, true).then(
+    function (comm) {
+      try {
+        let qrl = new ledger.qrl(comm)
+        return qrl.viewAddress()
+      } catch(e) {
+        console.log('---- Caught Error calling ledger.qrl().viewAddress() ----')
+        console.log(e)
+      }
+    }
+  )
+}
+
 module.exports = QrlLedger
