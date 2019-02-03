@@ -16,7 +16,7 @@ else {
 }
 
 // Constants
-const LIBRARY_VERSION = '0.0.1'
+const LIBRARY_VERSION = '0.2.1'
 const TIMEOUT = 1000
 const SHOR_PER_QUANTA = 1000000000
 
