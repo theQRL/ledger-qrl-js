@@ -16,7 +16,7 @@ else {
 }
 
 // Constants
-const LIBRARY_VERSION = '0.3.2'
+const LIBRARY_VERSION = '0.3.3'
 const TIMEOUT_SECONDS = 25
 
 // Create object to store all library functions in
@@ -258,7 +258,7 @@ QrlLedger.setIdx = function(idx) {
 
 QrlLedger.viewAddress = function() {
   console.log('-- Calling ledger.qrl().viewAddress() --')
-  return comm.create_async(TIMEOUT, true).then(
+  return comm.create_async(TIMEOUT_SECONDS, true).then(
     function (comm) {
       try {
         let qrl = new ledger.qrl(comm)
