@@ -39,7 +39,7 @@ describe('get_state', function () {
     before(function () {
         return comm.create_async(TIMEOUT, true).then(
             function (comm) {
-                let qrl = new ledger.Qrl(comm);
+                let qrl = new ledger.qrl(comm);
                 return qrl.get_state().then(function (result) {
                     response = result;
                     console.log(response);
@@ -66,7 +66,7 @@ describe('set_idx', function () {
         this.timeout(TIMEOUT_KEYGEN);
         return comm.create_async(TIMEOUT_KEYGEN, true).then(
             function (comm) {
-                let qrl = new ledger.Qrl(comm);
+                let qrl = new ledger.qrl(comm);
 
                 new_index = 10;
 
@@ -89,7 +89,7 @@ describe('publickey', function () {
         this.timeout(TIMEOUT_KEYGEN);
         return comm.create_async(TIMEOUT_KEYGEN, true).then(
             function (comm) {
-                let qrl = new ledger.Qrl(comm);
+                let qrl = new ledger.qrl(comm);
                 return qrl.publickey().then(function (result) {
                     response = result;
                     console.log(response);
@@ -124,7 +124,7 @@ describe('sign_raw', function () {
         this.timeout(TIMEOUT_KEYGEN);
         return comm.create_async(TIMEOUT_KEYGEN, true).then(
             function (comm) {
-                let qrl = new ledger.Qrl(comm);
+                let qrl = new ledger.qrl(comm);
                 return qrl.signSend(basic_tx).then(function (result) {
                     response = result;
                     console.log(response);
@@ -150,7 +150,7 @@ describe('sign_retrieve', function () {
     before(function () {
         this.timeout(TIMEOUT_KEYGEN);
         return comm.create_async(TIMEOUT_KEYGEN, true).then(async function (comm) {
-            let qrl = new ledger.Qrl(comm);
+            let qrl = new ledger.qrl(comm);
 
             // Create a transaction
             let source_addr = getDummyAddr(5);

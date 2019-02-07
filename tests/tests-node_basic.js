@@ -40,7 +40,7 @@ describe('get_version', function () {
     before(function () {
         return comm.create_async(TIMEOUT, true).then(
                 function (comm) {
-                    let qrl = new ledger.Qrl(comm);
+                    let qrl = new ledger.qrl(comm);
                     return qrl.get_version().then(function (result) {
                         response = result;
                         console.log(response);
@@ -78,7 +78,7 @@ describe('test_comm(5)', function () {
     before(function () {
         return comm.create_async(TIMEOUT, true).then(
             function (comm) {
-                let qrl = new ledger.Qrl(comm);
+                let qrl = new ledger.qrl(comm);
                 return qrl.test_comm(5).then(function (result) {
                     response = result;
                     console.log(response);

@@ -7,7 +7,7 @@ var Q = require('q')
 // Include connection bus
 if (typeof ledger === 'undefined') {
   ledger = require('../src')
-  comm = ledger.comm_node
+  comm = ledger.Comm_node
   browser = false
 }
 else {
@@ -16,7 +16,7 @@ else {
 }
 
 // Constants
-const LIBRARY_VERSION = '0.3.3'
+const LIBRARY_VERSION = '0.3.4'
 const TIMEOUT_SECONDS = 25
 
 // Create object to store all library functions in
