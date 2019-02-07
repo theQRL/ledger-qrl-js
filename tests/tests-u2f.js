@@ -21,7 +21,7 @@ var Q = require('q');
 
 if (typeof ledger === 'undefined') {
     ledger = require('../src');
-    comm = ledger.comm_node;
+    comm = ledger.Comm_node;
     browser = false;
 }
 else {

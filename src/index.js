@@ -18,7 +18,7 @@ let ledger = module.exports;
 
 ledger.Comm_node = require('./ledger-comm-node');
 ledger.Comm_u2f = require('./ledger-comm-u2f');
-ledger.Qrl = require('./ledger-qrl');
+ledger.qrl = require('./ledger-qrl');
 ledger.QrlConst = require('./ledger-qrl-consts');
 
 module.exports = ledger;
