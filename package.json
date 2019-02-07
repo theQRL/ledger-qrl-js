@@ -1,6 +1,6 @@
 {
   "name": "ledger-qrl-js",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "Node API for Ledger Nano S - QRL app",
   "main": "./src/index.js",
   "repository": {
