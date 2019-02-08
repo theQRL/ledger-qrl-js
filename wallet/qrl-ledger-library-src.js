@@ -20,7 +20,7 @@ else {
 }
 
 // Constants
-const LIBRARY_VERSION = '0.3.5'
+const LIBRARY_VERSION = '0.3.6'
 
 // Create object to store all library functions in
 var QrlLedger = {}
@@ -203,9 +203,11 @@ QrlLedger.createTx = function(source_addr, fee, dest_addr, dest_amount) {
     function (comm) {
       try {
         let qrl = new ledger.qrl(comm)
-        let txn = qrl.createTx(source_addr, fee, dest_addr, dest_amount)
+        let response = qrl.createTx(source_addr, fee, dest_addr, dest_amount)
+        console.log('---- Success calling ledger.qrl().createTx(source_addr, fee, dest_addr, dest_amount) ----')
+        console.log(response)
         comm.close_async()
-        return txn
+        return response
       } catch(e) {
         console.log('---- Caught Error calling ledger.qrl().createTx(source_addr, fee, dest_addr, dest_amount) ----')
         console.log(e)
@@ -222,9 +224,11 @@ QrlLedger.createMessageTx = function(source_addr, fee, message) {
     function (comm) {
       try {
         let qrl = new ledger.qrl(comm)
-        let txn = qrl.createMessageTx(source_addr, fee, message)
+        let response =  qrl.createMessageTx(source_addr, fee, message)
+        console.log('---- Success calling ledger.qrl().createMessageTx(source_addr, fee, message) ----')
+        console.log(response)
         comm.close_async()
-        return txn
+        return response
       } catch(e) {
         console.log('---- Caught Error calling ledger.qrl().createMessageTx(source_addr, fee, message) ----')
         console.log(e)
@@ -273,9 +277,15 @@ QrlLedger.setIdx = function(idx) {
     function (comm) {
       try {
         let qrl = new ledger.qrl(comm)
-        let idx = qrl.setIdx(idx)
-        comm.close_async()
-        return idx
+        return qrl.setIdx(idx).then(
+          function (result) {
+            // Success
+            console.log('---- Success calling ledger.qrl().setIdx(idx) ----')
+            console.log(result)
+            comm.close_async()
+            return result
+          }
+        )
       } catch(e) {
         console.log('---- Caught Error calling ledger.qrl().setIdx(idx) ----')
         console.log(e)
@@ -292,9 +302,15 @@ QrlLedger.viewAddress = function() {
     function (comm) {
       try {
         let qrl = new ledger.qrl(comm)
-        let address = qrl.viewAddress()
-        comm.close_async()
-        return address
+        return qrl.viewAddress().then(
+          function (result) {
+            // Success
+            console.log('---- Success calling qrl.viewAddress() ----')
+            console.log(result)
+            comm.close_async()
+            return result
+          }
+        )
       } catch(e) {
         console.log('---- Caught Error calling ledger.qrl().viewAddress() ----')
         console.log(e)
