@@ -39,10 +39,18 @@ LedgerNode.list_async = function() {
         if ((devices[i].vendorId == 0x2c97) && (devices[i].usagePage == 65440)) {
             deviceList.push(devices[i].path);
         } else if (devices[i].vendorId == 0x2c97) {
-            // Don't add devices if their path ends in 1
-            let lastChar = devices[i].path[devices[i].path.length - 1];
-            if (lastChar != "1") {
-                deviceList.push(devices[i].path);
+            // Resolve first HID path of composite ledger device across all platforms.
+            if ((process.platform === 'darwin') || (process.platform === 'linux')) {
+                // Don't add devices if their path ends in 1
+                let lastChar = devices[i].path[devices[i].path.length - 1];
+                if (lastChar != '1') {
+                    deviceList.push(devices[i].path);
+                }
+            } else if (process.platform === 'win32') {
+                // Only add HID paths that contain mi_00
+                if (devices[i].path.indexOf('mi_00') > -1) {
+                    deviceList.push(devices[i].path);
+                }
             }
         }
     }
