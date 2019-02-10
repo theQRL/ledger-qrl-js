@@ -20,7 +20,7 @@ else {
 }
 
 // Constants
-const LIBRARY_VERSION = '0.3.8'
+const LIBRARY_VERSION = '0.4.0'
 
 // Create object to store all library functions in
 var QrlLedger = {}
