@@ -39,9 +39,14 @@ LedgerNode.list_async = function() {
         if ((devices[i].vendorId == 0x2c97) && (devices[i].usagePage == 65440)) {
             deviceList.push(devices[i].path);
         } else if (devices[i].vendorId == 0x2c97) {
-            deviceList.push(devices[i].path);
+            // Don't add devices if their path ends in 1
+            let lastChar = devices[i][devices[i].length - 1];
+            if (lastChar != "1") {
+                deviceList.push(devices[i].path);
+            }
         }
     }
+
     return Q.fcall(function() {
         return deviceList;
     });
