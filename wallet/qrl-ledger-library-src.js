@@ -11,16 +11,16 @@ if (typeof ledger === 'undefined') {
   ledger = require('../src')
   comm = ledger.Comm_node
   browser = false
-  TIMEOUT = 25000 // ms
+  TIMEOUT = 28000 // ms
 }
 else {
   browser = true
   comm = ledger.comm_u2f
-  TIMEOUT = 25 // seconds
+  TIMEOUT = 28 // seconds
 }
 
 // Constants
-const LIBRARY_VERSION = '0.4.2'
+const LIBRARY_VERSION = '0.4.3'
 
 // Create object to store all library functions in
 var QrlLedger = {}
