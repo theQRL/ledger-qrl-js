@@ -136,9 +136,9 @@ describe('sign_raw', function () {
     });
 });
 
-function getDummyAddr(val){
+function getDummyAddr(val) {
     let tmp = Buffer.alloc(39);
-    for (let i = 0; i<39; i++){
+    for (let i = 0; i < 39; i++) {
         tmp[i] = val;
     }
     return tmp;
@@ -154,13 +154,13 @@ describe('sign_retrieve', function () {
 
             // Create a transaction
             let source_addr = getDummyAddr(5);
-            let fee = Buffer.from([0,0,0,1,0,0,0,8]);
+            let fee = Buffer.from([0, 0, 0, 1, 0, 0, 0, 8]);
 
             let dest_addr = [getDummyAddr(6), getDummyAddr(7)];
 
             let dest_amount = [
-                Buffer.from([0,0,0,0,0,1,0,8]),
-                Buffer.from([0,0,0,0,1,0,0,8])];
+                Buffer.from([0, 0, 0, 0, 0, 1, 0, 8]),
+                Buffer.from([0, 0, 0, 0, 1, 0, 0, 8])];
 
             let tx = qrl.createTx(source_addr, fee, dest_addr, dest_amount);
 
@@ -172,6 +172,54 @@ describe('sign_retrieve', function () {
 
     it('return_code is 0x9000', function () {
         console.log(response.error_message);
+        expect(response.return_code).to.equal(0x9000);
+    });
+});
+
+describe('sign_retrieve_message_tx', function () {
+    // call API
+    let response = {};
+    before(function () {
+        this.timeout(TIMEOUT_KEYGEN);
+        return comm.create_async(TIMEOUT_KEYGEN, true).then(async function (comm) {
+            let qrl = new ledger.qrl(comm);
+
+            // Create a transaction
+            let source_addr = getDummyAddr(5);
+            let fee = Buffer.from([0, 0, 0, 1, 0, 0, 0, 8]);
+
+            let message = Buffer.alloc(80);
+            message.fill(10);
+
+            let tx = qrl.createMessageTx(source_addr, fee, message);
+
+            // Send transaction
+            response = await qrl.retrieveSignature(tx);
+            return response
+        });
+    });
+
+    it('return_code is 0x9000', function () {
+        console.log(response.error_message);
+        expect(response.return_code).to.equal(0x9000);
+    });
+});
+
+describe('viewAddress', function () {
+    let response;
+    // call API
+    before(function () {
+        this.timeout(TIMEOUT_KEYGEN);
+        return comm.create_async(TIMEOUT_KEYGEN, true).then(
+            function (comm) {
+                let qrl = new ledger.qrl(comm);
+                return qrl.viewAddress().then(function (result) {
+                    response = result;
+                    console.log(response);
+                })
+            });
+    });
+    it('return_code is 0x9000', function () {
         expect(response.return_code).to.equal(0x9000);
     });
 });
