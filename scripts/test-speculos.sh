@@ -29,7 +29,7 @@ git -C "$WORK/sdk" checkout --detach "$SDK_REV"
 # Enable only the app's diagnostic APDUs; leave mock seed and other flags off.
 sed -i.bak 's/^#DEFINES   += TESTING_ENABLED$/DEFINES   += TESTING_ENABLED/' "$WORK/app/Makefile"
 
-docker run --rm --platform linux/amd64 --entrypoint /bin/bash \
+docker run --rm --platform linux/amd64 --user "$(id -u):$(id -g)" --entrypoint /bin/bash \
     -v "$WORK:/project" -w /project/app \
     -e BOLOS_SDK=/project/sdk -e BOLOS_ENV=/opt/bolos \
     "$BUILDER" -lc 'make -j2' > "$WORK/build.log" 2>&1 || {

@@ -24,6 +24,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     strategy:
+      fail-fast: false
       matrix:
         dependencies: [baseline, updated]
     steps:
@@ -52,3 +53,4 @@ jobs:
         with:
           name: speculos-${{ matrix.dependencies }}-logs
           path: .speculos/*.log
+          include-hidden-files: true
