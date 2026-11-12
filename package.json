@@ -19,21 +19,30 @@
   },
   "homepage": "https://github.com/theQRL/ledger-qrl-js",
   "dependencies": {
-    "chai": "^4.2.0",
-    "mocha": "^7.1.1",
-    "node-hid": "^0.7.4",
-    "q": "^1.5.1",
-    "requirejs": "^2.3.6"
+    "node-hid": "3.4.0",
+    "q": "1.5.1",
+    "requirejs": "2.3.8"
   },
   "devDependencies": {
-    "browserify": "^16.2.3",
-    "uglify-js": "^3.4.9"
+    "browserify": "17.0.1",
+    "chai": "4.5.0",
+    "mocha": "12.0.3",
+    "uglify-js": "3.19.3"
+  },
+  "overrides": {
+    "mocha": {
+      "glob": "14.0.5",
+      "minimatch": "11.0.8"
+    }
   },
   "scripts": {
-    "test": "mocha tests/tests-node_basic.js",
+    "test": "mocha tests/unit.test.js",
+    "test:device": "mocha tests/tests-node_basic.js",
+    "test:speculos": "bash scripts/test-speculos.sh",
     "browserify-wallet": "browserify --im --standalone QrlLedger -o wallet/qrl-ledger-library.js wallet/qrl-ledger-library-src.js",
     "browserify-test": "browserify --im --standalone runTests -o tests/tests-browser.js tests/tests-u2f.js",
     "browserify": "browserify --im --s=ledger -o browser/ledger.js src/index-browserify.js",
+    "uglify": "uglifyjs browser/ledger.js -c -m -o browser/ledger.min.js",
     "clean": "rm -f browser/ledger.js browser/ledger.min.js"
   },
   "browser": {

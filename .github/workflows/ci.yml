@@ -1,0 +1,54 @@
+name: Tests
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  unit:
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        node: [22, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0-dev libudev-dev
+      - run: npm ci
+      - run: npm test
+      - run: npm run browserify && npm run browserify-wallet && npm run browserify-test && npm run uglify
+  speculos:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      matrix:
+        dependencies: [baseline, updated]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Restore production dependency baseline
+        if: matrix.dependencies == 'baseline'
+        run: |
+          git show 374242f:package.json > package.json
+          git show 374242f:package-lock.json > package-lock.json
+      - name: Install baseline JavaScript dependencies (no physical HID)
+        if: matrix.dependencies == 'baseline'
+        run: npm ci --ignore-scripts
+      - name: Install updated dependencies including native HID
+        if: matrix.dependencies == 'updated'
+        run: |
+          sudo apt-get update && sudo apt-get install -y libusb-1.0-0-dev libudev-dev
+          npm ci
+      - run: bash scripts/test-speculos.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: speculos-${{ matrix.dependencies }}-logs
+          path: .speculos/*.log

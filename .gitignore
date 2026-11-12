@@ -3,3 +3,5 @@
 \node_modules
 wallet/qrl-ledger-library.js
 browser/ledger.js
+.speculos/
+tests/tests-browser.js

@@ -16,7 +16,13 @@
  ********************************************************************************/
 const expect = require('chai').expect;
 
-if (typeof ledger === 'undefined') {
+if (process.env.SPECULOS_URL) {
+    ledger = {qrl: require('../src/ledger-qrl')};
+    const Speculos = require('./helpers/speculos');
+    comm = {create_async: () => Promise.resolve(new Speculos())};
+    console.log("Running Speculos Version\n");
+}
+else if (typeof ledger === 'undefined') {
     ledger = require('../src');
     comm = ledger.Comm_node;
     browser = false;
@@ -30,9 +36,10 @@ else {
 
 TIMEOUT = 1000;
 TIMEOUT_KEYGEN = 15000;
-EXPECTED_MAJOR = 0;
-EXPECTED_MINOR = 4;
-EXPECTED_PATCH = 0;
+const expectedVersion = (process.env.QRL_APP_VERSION || '0.4.0').split('.').map(Number);
+EXPECTED_MAJOR = expectedVersion[0];
+EXPECTED_MINOR = expectedVersion[1];
+EXPECTED_PATCH = expectedVersion[2];
 
 describe('get_version', function () {
     let response;
